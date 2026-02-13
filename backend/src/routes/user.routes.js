@@ -1,8 +1,11 @@
 import express from 'express';
-const router = express.Router();
-import { getUsers } from '../controllers/user.controller.js';
-// import { protect } from '../middlewares/auth.middleware.js';
+import { getUsers, approveUser, getPendingUsers } from '../controllers/user.controller.js';
+import { protect, authorize } from '../middlewares/authMiddleware.js';
 
-router.get('/', getUsers);
+const router = express.Router();
+
+router.get('/', protect, authorize('admin'), getUsers);
+router.get('/pending', protect, authorize('admin'), getPendingUsers);
+router.put('/:id/approve', protect, authorize('admin'), approveUser);
 
 export default router;
