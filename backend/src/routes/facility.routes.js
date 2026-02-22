@@ -1,14 +1,12 @@
-const express = require('express');
+import express from 'express';
+import { create, getAll, getOne, update, remove } from '../controllers/facility.controller.js';
+
 const router = express.Router();
-const facilityController = require('../controllers/facility.controller');
 
-// Note: Later, you can add middleware here like 'protect' (admin only)
-// Example: router.post('/', protect, admin, facilityController.create);
+router.post('/', create);
+router.get('/', getAll);
+router.get('/:id', getOne);
+router.put('/:id', update);
+router.delete('/:id', remove);
 
-router.post('/', facilityController.create);
-router.get('/', facilityController.getAll);
-router.get('/:id', facilityController.getOne);
-router.put('/:id', facilityController.update);
-router.delete('/:id', facilityController.remove);
-
-module.exports = router;
+export default router;

@@ -1,40 +1,24 @@
-/**
- * @file Facility.model.js
- * @description Mongoose schema for Infrastructure & Facilities Management.
- * Includes geospatial indexing for Gap Analysis.
- */
-
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const facilitySchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Facility name is required'], // Custom Error Message
-    trim: true,
-    maxlength: [100, 'Name cannot exceed 100 characters']
+    required: true,
+    trim: true
   },
   type: {
     type: String,
-    enum: {
-      values: ['Bus Stop', 'Station', 'Parking', 'Bike Hub'],
-      message: '{VALUE} is not a valid facility type' // Custom Error Message
-    },
-    required: [true, 'Facility type is required']
+    enum: ['Bus Stop', 'Station', 'Parking', 'Bike Hub'],
+    required: true
   },
   areaId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Area',
-    required: [true, 'Facility must be linked to a valid Area']
+    ref: 'Area', 
+    required: true
   },
   coordinates: {
-    lat: { 
-      type: Number, 
-      required: [true, 'Latitude is required'] 
-    },
-    lng: { 
-      type: Number, 
-      required: [true, 'Longitude is required'] 
-    }
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true }
   },
   hasDisabledAccess: {
     type: Boolean,
@@ -42,14 +26,15 @@ const facilitySchema = new mongoose.Schema({
   },
   capacity: {
     type: Number,
-    required: [true, 'Capacity is required'],
-    min: [0, 'Capacity cannot be negative']
+    required: true,
+    min: 0
   }
 }, {
-  timestamps: true // Adds createdAt and updatedAt automatically
+  timestamps: true
 });
 
-// Best Practice: 2dsphere index for geospatial queries (Gap Analysis)
+// Index for map queries (Critical for Gap Analysis)
 facilitySchema.index({ coordinates: '2dsphere' });
 
-module.exports = mongoose.model('Facility', facilitySchema);
+const Facility = mongoose.model('Facility', facilitySchema);
+export default Facility;
