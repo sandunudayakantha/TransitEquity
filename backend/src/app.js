@@ -3,7 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
-
+import facilityRoutes from './routes/facility.routes.js';
 const app = express();
 
 
@@ -16,6 +16,9 @@ app.use(cors());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+
+// 2. REGISTER YOUR ROUTE HERE
+app.use('/api/facilities', facilityRoutes);
 
 // Error Handler
 app.use((err, req, res, next) => {
