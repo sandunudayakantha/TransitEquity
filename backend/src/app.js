@@ -8,6 +8,7 @@ import transportRoutes from './routes/transport.routes.js';
 import serviceRoutes from './routes/service.routes.js';
 
 import facilityRoutes from './routes/facility.routes.js';
+import areaRoutes from './routes/area.routes.js';
 const app = express();
 
 
@@ -26,6 +27,7 @@ app.use('/api/services', serviceRoutes);
 
 // 2. REGISTER YOUR ROUTE HERE
 app.use('/api/facilities', facilityRoutes);
+app.use('/api/areas', areaRoutes);
 
 // Error Handler
 app.use((err, req, res, next) => {
