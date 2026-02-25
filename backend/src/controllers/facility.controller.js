@@ -50,7 +50,7 @@ export const update = async (req, res) => {
   }
 };
 
-// Delete
+// Delete  
 export const remove = async (req, res) => {
   try {
     const facility = await facilityService.deleteFacility(req.params.id);
