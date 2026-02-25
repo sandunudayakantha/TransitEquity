@@ -6,10 +6,12 @@ export const createFacility = async (facilityData) => {
 
 export const getAllFacilities = async () => {
   return await Facility.find().populate('areaId', 'name city');
+  //return await Facility.find();
 };
 
 export const getFacilityById = async (id) => {
   return await Facility.findById(id).populate('areaId', 'name city');
+ //return await Facility.findById(id);
 };
 
 export const updateFacility = async (id, updateData) => {
