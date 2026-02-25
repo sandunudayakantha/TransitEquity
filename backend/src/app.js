@@ -2,10 +2,15 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './docs/swagger.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import transportRoutes from './routes/transport.routes.js';
 import serviceRoutes from './routes/service.routes.js';
+
+import gapRoutes from './routes/gap.routes.js';
+import feedbackRoutes from './routes/feedback.routes.js';
 
 import facilityRoutes from './routes/facility.routes.js';
 import areaRoutes from './routes/area.routes.js';
@@ -28,6 +33,10 @@ app.use('/api/services', serviceRoutes);
 // 2. REGISTER YOUR ROUTE HERE
 app.use('/api/facilities', facilityRoutes);
 app.use('/api/areas', areaRoutes);
+
+app.use('/api/gap', gapRoutes);
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Error Handler
 app.use((err, req, res, next) => {
