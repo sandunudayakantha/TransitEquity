@@ -1,9 +1,21 @@
-
 import request from 'supertest';
 import mongoose from 'mongoose';
-import app from '../src/server.js';
+import app from '../src/app.js';
 import Transport from '../src/models/Transport.model.js';
 import ServiceStatus from '../src/models/ServiceStatus.model.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+beforeAll(async () => {
+  if (mongoose.connection.readyState === 0) {
+    await mongoose.connect(process.env.MONGO_URI);
+  }
+});
+
+afterAll(async () => {
+  await mongoose.connection.close();
+});
 
 describe('Transport Route & Service Management Validation', () => {
   // Missing required field
