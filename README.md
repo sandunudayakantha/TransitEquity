@@ -45,11 +45,8 @@ npm test
 
 The API follows RESTful principles. Authentication is handled via JWT stored in cookies or Bearer tokens.
 
-### Interactive Documentation
-A Swagger UI is available for interactive exploration:
-- **URL**: `http://localhost:5001/api-docs`
 
----
+
 
 ### 1. Authentication (`/api/auth`)
 
@@ -144,5 +141,4 @@ A Swagger UI is available for interactive exploration:
 
 ---
 
-## Postman Collection
-A pre-configured Postman collection is available at `backend/feedback_tests.postman_collection.json` for manual testing.
+
