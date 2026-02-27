@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 
 export const createTransport = async (req, res) => {
   try {
-    const { routeNumber, serviceType, frequency, capacity, startPoint, endPoint } = req.body;
+    const { routeNumber, serviceType, frequency, capacity, coveredAreas, startPoint, endPoint } = req.body;
     // Check for missing fields
     if (!routeNumber || !serviceType || !frequency || !capacity || !startPoint || !endPoint) {
       return res.status(400).json({ error: 'Missing required fields' });
