@@ -31,6 +31,9 @@ describe('Facility Endpoints', () => {
     let testFacilityId;
 
     beforeAll(async () => {
+        // Cleanup to prevent duplicate key errors
+        await Area.deleteMany({ name: 'TestAreaForFacility' });
+
         // Setup Area
         const area = await Area.create({
             name: 'TestAreaForFacility',
