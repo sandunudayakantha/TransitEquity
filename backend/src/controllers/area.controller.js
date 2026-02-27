@@ -1,7 +1,11 @@
 import Area from '../models/Area.model.js';
+import { createAreaSchema, updateAreaSchema } from '../validations/area.validation.js';
 
 export const createArea = async (req, res) => {
     try {
+        const { error } = createAreaSchema.validate(req.body);
+        if (error) return res.status(400).json({ error: error.details[0].message });
+
         const area = new Area(req.body);
         await area.save();
         res.status(201).json(area);
@@ -31,6 +35,9 @@ export const getAreaById = async (req, res) => {
 
 export const updateArea = async (req, res) => {
     try {
+        const { error } = updateAreaSchema.validate(req.body);
+        if (error) return res.status(400).json({ error: error.details[0].message });
+
         const { population, areaSize } = req.body;
 
         // If population or areaSize is updated, we need to recalculate density.
