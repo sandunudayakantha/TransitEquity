@@ -8,14 +8,19 @@ export const getUsers = async (req, res) => {
     res.json(users);
 };
 
-// @desc    Approve a user
+// @desc    Toggle approval for an officer account
 // @route   PUT /api/users/:id/approve
 // @access  Private/Admin
 export const approveUser = async (req, res) => {
     const user = await User.findById(req.params.id);
 
     if (user) {
-        user.isApproved = true;
+        if (!['tOfficer', 'iOfficer'].includes(user.role)) {
+            res.status(400);
+            throw new Error('Only officer accounts can have approval toggled');
+        }
+
+        user.isApproved = !user.isApproved;
         const updatedUser = await user.save();
         res.json({
             _id: updatedUser._id,
