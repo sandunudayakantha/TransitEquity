@@ -1,8 +1,19 @@
-import React from 'react';
 import { ArrowRight, MessageSquareCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import heroBg from '../assets/hero_bg.png';
 
-const Hero = () => {
+const Hero = ({ user }) => {
+  const navigate = useNavigate();
+
+  const handlePrimaryAction = () => {
+    if (user?.role === 'admin') {
+      navigate('/admin');
+      return;
+    }
+
+    navigate('/login');
+  };
+
   return (
     <section className="relative py-24 lg:py-40 overflow-hidden bg-white">
       {/* Background Image with Overlay */}
@@ -33,13 +44,19 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button className="btn btn-primary w-full sm:w-auto px-8 py-4 text-lg gap-2">
-              Report an Issue
+            <button className="btn btn-primary w-full sm:w-auto px-8 py-4 text-lg gap-2" type="button" onClick={handlePrimaryAction}>
+              {user?.role === 'admin' ? 'Open Admin Panel' : 'Login to Continue'}
               <ArrowRight className="w-5 h-5" />
             </button>
-            <button className="btn btn-secondary w-full sm:w-auto px-8 py-4 text-lg">
-              View Active Routes
-            </button>
+            {!user ? (
+              <button className="btn btn-secondary w-full sm:w-auto px-8 py-4 text-lg" type="button" onClick={() => navigate('/register')}>
+                Create Account
+              </button>
+            ) : (
+              <button className="btn btn-secondary w-full sm:w-auto px-8 py-4 text-lg">
+                View Active Routes
+              </button>
+            )}
           </div>
         </div>
       </div>
