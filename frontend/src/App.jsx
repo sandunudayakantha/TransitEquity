@@ -9,6 +9,8 @@ import LoginPage from './pages/LoginPage';
 import ManageAreasPage from './pages/ManageAreasPage';
 import RegisterPage from './pages/RegisterPage';
 import UsersPage from './pages/UsersPage';
+import TransportRoutesPage from './pages/TransportRoutesPage';
+import TransportFormPage from './pages/TransportFormPage';
 
 function App() {
   const [session, setSession] = useState(() => loadAuthSession());
@@ -86,6 +88,30 @@ function App() {
         element={(
           <AdminRoute user={session?.user ?? null}>
             <AreaFormPage user={session?.user ?? null} onLogout={handleLogout} mode="edit" />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/transports"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <TransportRoutesPage user={session?.user ?? null} onLogout={handleLogout} />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/transports/new"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <TransportFormPage user={session?.user ?? null} onLogout={handleLogout} mode="create" />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/transports/:transportId/edit"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <TransportFormPage user={session?.user ?? null} onLogout={handleLogout} mode="edit" />
           </AdminRoute>
         )}
       />
