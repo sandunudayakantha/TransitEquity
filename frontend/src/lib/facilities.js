@@ -18,22 +18,23 @@ const getRequestConfig = () => {
 
 export const fetchFacilities = async () => {
   const response = await axios.get(`${apiBaseUrl}/api/facilities`, getRequestConfig());
-  return response.data;
+  // The facility backend wraps the response in { success: true, data: ... } 
+  return response.data.data || response.data;
 };
 
 export const fetchFacilityById = async (facilityId) => {
   const response = await axios.get(`${apiBaseUrl}/api/facilities/${facilityId}`, getRequestConfig());
-  return response.data;
+  return response.data.data || response.data;
 };
 
 export const createFacility = async (payload) => {
   const response = await axios.post(`${apiBaseUrl}/api/facilities`, payload, getRequestConfig());
-  return response.data;
+  return response.data.data || response.data;
 };
 
 export const updateFacility = async (facilityId, payload) => {
   const response = await axios.put(`${apiBaseUrl}/api/facilities/${facilityId}`, payload, getRequestConfig());
-  return response.data;
+  return response.data.data || response.data;
 };
 
 export const deleteFacility = async (facilityId) => {
