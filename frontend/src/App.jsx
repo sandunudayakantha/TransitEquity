@@ -9,6 +9,8 @@ import LoginPage from './pages/LoginPage';
 import ManageAreasPage from './pages/ManageAreasPage';
 import RegisterPage from './pages/RegisterPage';
 import UsersPage from './pages/UsersPage';
+import ManageFacilitiesPage from './pages/ManageFacilitiesPage';
+import FacilityFormPage from './pages/FacilityFormPage';
 
 function App() {
   const [session, setSession] = useState(() => loadAuthSession());
@@ -86,6 +88,30 @@ function App() {
         element={(
           <AdminRoute user={session?.user ?? null}>
             <AreaFormPage user={session?.user ?? null} onLogout={handleLogout} mode="edit" />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/facilities"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <ManageFacilitiesPage user={session?.user ?? null} onLogout={handleLogout} />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/facilities/new"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <FacilityFormPage user={session?.user ?? null} onLogout={handleLogout} mode="create" />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/facilities/:facilityId/edit"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <FacilityFormPage user={session?.user ?? null} onLogout={handleLogout} mode="edit" />
           </AdminRoute>
         )}
       />
