@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bus, Edit3, LoaderCircle, Plus, TrainFront, Trash2, Route as RouteIcon } from 'lucide-react';
+import { Bus, Edit3, LoaderCircle, Plus, TrainFront, Trash2, Route as RouteIcon, ChevronDown, ChevronUp, Truck } from 'lucide-react';
 import AdminLayout from '../components/AdminLayout';
 import { deleteTransport, fetchTransports } from '../lib/transports';
+import ServiceStatusList from '../components/ServiceStatusList';
 
 const TransportRoutesPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [transports, setTransports] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeletingId, setIsDeletingId] = useState(null);
+  const [expandedRouteId, setExpandedRouteId] = useState(null);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -49,9 +51,13 @@ const TransportRoutesPage = ({ user, onLogout }) => {
     }
   };
 
+  const toggleExpand = (routeId) => {
+    setExpandedRouteId(current => current === routeId ? null : routeId);
+  };
+
   return (
     <AdminLayout user={user} onLogout={onLogout} eyebrow="Transport Management" title="Transit Routes">
-      <section className="rounded-[2rem] border border-white/10 bg-white/5 p-7 shadow-lg shadow-slate-950/20">
+      <section className="rounded-4xl border border-white/10 bg-white/5 p-7 shadow-lg shadow-slate-950/20">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-3">
@@ -99,9 +105,16 @@ const TransportRoutesPage = ({ user, onLogout }) => {
 
           {!isLoading &&
             transports.map((route) => (
-              <article key={route._id} className="rounded-3xl border border-white/10 bg-slate-900/60 p-5">
+              <article 
+                key={route._id} 
+                className={`rounded-3xl border transition-all duration-300 ${
+                  expandedRouteId === route._id 
+                    ? 'border-sky-400/30 bg-slate-900/80 ring-1 ring-sky-400/20' 
+                    : 'border-white/10 bg-slate-900/60 hover:bg-slate-900/80 hover:border-white/20'
+                } p-5 overflow-hidden`}
+              >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
+                  <div className="flex-1 cursor-pointer" onClick={() => toggleExpand(route._id)}>
                     <div className="flex flex-wrap items-center gap-3">
                       <div className={`rounded-xl p-2 ${route.serviceType === 'Bus' ? 'bg-amber-400/10 text-amber-300' : 'bg-sky-400/10 text-sky-300'}`}>
                         {route.serviceType === 'Bus' ? <Bus className="h-5 w-5" /> : <TrainFront className="h-5 w-5" />}
@@ -110,6 +123,9 @@ const TransportRoutesPage = ({ user, onLogout }) => {
                       <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs font-medium text-slate-300">
                         {route.serviceType}
                       </span>
+                      <div className="ml-auto lg:hidden">
+                        {expandedRouteId === route._id ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
+                      </div>
                     </div>
                     <div className="mt-4 grid gap-3 text-sm text-white sm:grid-cols-2 xl:grid-cols-4">
                       <p>Start Point: <span className="font-medium text-white">{route.startPoint}</span></p>
@@ -124,19 +140,33 @@ const TransportRoutesPage = ({ user, onLogout }) => {
                          </span>
                        ))}
                     </div>
+
+                    <div className="mt-4 flex items-center gap-2 text-[10px] text-sky-300/70 font-bold uppercase tracking-widest">
+                       <Truck className="h-3.5 w-3.5" />
+                       {expandedRouteId === route._id ? 'Hide Vehicle Status' : 'View Vehicle Status'}
+                    </div>
                   </div>
 
-                  <div className="flex gap-3">
-                    <button className="btn btn-secondary gap-2 border-white/15 bg-white/5 text-white hover:bg-white/10" type="button" onClick={() => navigate(`/admin/transports/${route._id}/edit`)}>
+                  <div className="flex gap-3 items-start">
+                    <button className="btn btn-secondary h-10 gap-2 border-white/15 bg-white/5 text-white hover:bg-white/10" type="button" onClick={(e) => { e.stopPropagation(); navigate(`/admin/transports/${route._id}/edit`); }}>
                       <Edit3 className="h-4 w-4" />
                       Edit
                     </button>
-                    <button className="btn bg-red-500/15 text-red-100 hover:bg-red-500/25 gap-2" type="button" onClick={() => handleDelete(route._id)} disabled={isDeletingId === route._id}>
+                    <button className="btn bg-red-500/15 text-red-100 hover:bg-red-500/25 h-10 gap-2" type="button" onClick={(e) => { e.stopPropagation(); handleDelete(route._id); }} disabled={isDeletingId === route._id}>
                       {isDeletingId === route._id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       Delete
                     </button>
+                    <button className="hidden lg:flex btn bg-white/5 border border-white/10 text-slate-300 h-10 px-3 hover:bg-white/10" onClick={() => toggleExpand(route._id)}>
+                       {expandedRouteId === route._id ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                    </button>
                   </div>
                 </div>
+
+                {expandedRouteId === route._id && (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <ServiceStatusList route={route} />
+                  </div>
+                )}
               </article>
             ))}
         </div>
@@ -145,4 +175,4 @@ const TransportRoutesPage = ({ user, onLogout }) => {
   );
 };
 
-export default TransportRoutesPage;
+export default TransportRoutesPage;
