@@ -9,8 +9,8 @@ import LoginPage from './pages/LoginPage';
 import ManageAreasPage from './pages/ManageAreasPage';
 import RegisterPage from './pages/RegisterPage';
 import UsersPage from './pages/UsersPage';
-import ManageFacilitiesPage from './pages/ManageFacilitiesPage';
-import FacilityFormPage from './pages/FacilityFormPage';
+import TransportRoutesPage from './pages/TransportRoutesPage';
+import TransportFormPage from './pages/TransportFormPage';
 
 function App() {
   const [session, setSession] = useState(() => loadAuthSession());
@@ -92,26 +92,26 @@ function App() {
         )}
       />
       <Route
-        path="/admin/facilities"
+        path="/admin/transports"
         element={(
           <AdminRoute user={session?.user ?? null}>
-            <ManageFacilitiesPage user={session?.user ?? null} onLogout={handleLogout} />
+            <TransportRoutesPage user={session?.user ?? null} onLogout={handleLogout} />
           </AdminRoute>
         )}
       />
       <Route
-        path="/admin/facilities/new"
+        path="/admin/transports/new"
         element={(
           <AdminRoute user={session?.user ?? null}>
-            <FacilityFormPage user={session?.user ?? null} onLogout={handleLogout} mode="create" />
+            <TransportFormPage user={session?.user ?? null} onLogout={handleLogout} mode="create" />
           </AdminRoute>
         )}
       />
       <Route
-        path="/admin/facilities/:facilityId/edit"
+        path="/admin/transports/:transportId/edit"
         element={(
           <AdminRoute user={session?.user ?? null}>
-            <FacilityFormPage user={session?.user ?? null} onLogout={handleLogout} mode="edit" />
+            <TransportFormPage user={session?.user ?? null} onLogout={handleLogout} mode="edit" />
           </AdminRoute>
         )}
       />
