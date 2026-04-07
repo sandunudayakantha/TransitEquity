@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { LoaderCircle, MapPin, Plus } from 'lucide-react';
 import GoogleMapPicker from './GoogleMapPicker';
 import { fetchAreas } from '../lib/areas';
+import { fetchTransports } from '../lib/transports';
 
 const emptyForm = {
   name: '',
@@ -23,28 +24,59 @@ const FacilityForm = ({
 }) => {
   const [formData, setFormData] = useState(() => initialData || emptyForm);
   const [areas, setAreas] = useState([]);
-  const [isLoadingAreas, setIsLoadingAreas] = useState(true);
+  const [transports, setTransports] = useState([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [selectedTransportId, setSelectedTransportId] = useState('');
 
   useEffect(() => {
-    const loadAreas = async () => {
+    const loadData = async () => {
       try {
-        const data = await fetchAreas();
-        setAreas(data);
-        // Pre-select first area if none selected and it's create mode
-        if (data.length > 0 && !initialData?.areaId) {
+        const [areasData, transportsData] = await Promise.all([
+          fetchAreas(),
+          fetchTransports()
+        ]);
+        setAreas(areasData);
+        setTransports(transportsData);
+        
+        if (areasData.length > 0 && !initialData?.areaId) {
           setFormData((current) => ({
             ...current,
-            areaId: data[0]._id,
+            areaId: areasData[0]._id,
           }));
         }
       } catch (err) {
-        console.error('Failed to load areas', err);
+        console.error('Failed to load data', err);
       } finally {
-        setIsLoadingAreas(false);
+        setIsLoadingData(false);
       }
     };
-    loadAreas();
+    loadData();
   }, [initialData]);
+
+  const routePath = useMemo(() => {
+    if (!selectedTransportId || areas.length === 0 || transports.length === 0) return [];
+    const transport = transports.find(t => t._id === selectedTransportId);
+    if (!transport || !transport.coveredAreas) return [];
+    
+    return transport.coveredAreas.map(areaRef => {
+      const id = typeof areaRef === 'object' ? areaRef._id || areaRef : areaRef;
+      const area = areas.find(a => String(a._id) === String(id));
+      if (area && area.coordinates) {
+        return { 
+          lat: Number(area.coordinates.lat), 
+          lng: Number(area.coordinates.lng),
+          name: area.name 
+        };
+      }
+      return null;
+    }).filter(Boolean);
+  }, [selectedTransportId, areas, transports]);
+
+  const selectedAreaCenter = useMemo(() => {
+    if (!formData.areaId || areas.length === 0) return null;
+    const area = areas.find(a => a._id === formData.areaId);
+    return area?.coordinates || null;
+  }, [formData.areaId, areas]);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -102,12 +134,12 @@ const FacilityForm = ({
         <div className="grid gap-5 md:grid-cols-2">
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-white">Facility Name</span>
-            <input className="w-full rounded-xl border border-white/15 bg-slate-900 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-sky-300 focus:ring-2 focus:ring-sky-300/20" name="name" value={formData.name} onChange={handleChange} placeholder="Main Terminal" required />
+            <input autoComplete="off" className="w-full rounded-xl border border-white/15 bg-slate-900 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-sky-300 focus:ring-2 focus:ring-sky-300/20" name="name" value={formData.name} onChange={handleChange} placeholder="Main Terminal" required />
           </label>
 
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-white">Facility Type</span>
-            <select className="w-full rounded-xl border border-white/15 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-300/20" name="type" value={formData.type} onChange={handleChange} required>
+            <select autoComplete="off" className="w-full rounded-xl border border-white/15 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-300/20" name="type" value={formData.type} onChange={handleChange} required>
               <option value="Bus Stop">Bus Stop</option>
               <option value="Station">Station</option>
               <option value="Parking">Parking</option>
@@ -119,10 +151,10 @@ const FacilityForm = ({
         <div className="grid gap-5 md:grid-cols-2">
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-white">Area / Zone</span>
-            {isLoadingAreas ? (
+            {isLoadingData ? (
               <div className="flex h-[46px] items-center rounded-xl border border-white/15 bg-slate-900 px-4 text-slate-400">Loading areas...</div>
             ) : (
-              <select className="w-full rounded-xl border border-white/15 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-300/20" name="areaId" value={formData.areaId} onChange={handleChange} required>
+              <select autoComplete="off" className="w-full rounded-xl border border-white/15 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-300/20" name="areaId" value={formData.areaId} onChange={handleChange} required>
                 {areas.length === 0 && <option value="" disabled>No areas available. Create one first.</option>}
                 {areas.map((area) => (
                   <option key={area._id} value={area._id}>{area.name} ({area.city})</option>
@@ -133,7 +165,7 @@ const FacilityForm = ({
 
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-white">Capacity</span>
-            <input className="w-full rounded-xl border border-white/15 bg-slate-900 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-sky-300 focus:ring-2 focus:ring-sky-300/20" type="number" min="0" name="capacity" value={formData.capacity} onChange={handleChange} placeholder="100" required />
+            <input autoComplete="off" className="w-full rounded-xl border border-white/15 bg-slate-900 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-sky-300 focus:ring-2 focus:ring-sky-300/20" type="number" min="0" name="capacity" value={formData.capacity} onChange={handleChange} placeholder="100" required />
           </label>
         </div>
 
@@ -146,6 +178,31 @@ const FacilityForm = ({
           </div>
           <span className="text-sm font-medium text-white">Has Disabled Access</span>
         </label>
+
+        <div className="rounded-2xl border border-sky-400/20 bg-sky-500/10 p-5 mt-6 mb-4">
+          <label className="block mb-6">
+            <span className="mb-2 block text-sm font-medium text-sky-200">Visual Guide: Overlay Transport Route (Optional)</span>
+            <select className="w-full rounded-xl border border-sky-400/20 bg-slate-900/50 px-4 py-3 text-white outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-300/20" value={selectedTransportId} onChange={(e) => setSelectedTransportId(e.target.value)}>
+              <option value="">-- Do not overlay any route --</option>
+              {transports.map(t => (
+                <option key={t._id} value={t._id}>Route {t.routeNumber} ({t.startPoint} ⇄ {t.endPoint})</option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-sky-300/70">Select a route to display it on the map as a straight line, helping you place the facility along the route.</p>
+          </label>
+
+          <label className="block">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-semibold text-sky-200">Map Placement Guide</span>
+              <span className="text-xs text-sky-300/70">Place marker within the Area</span>
+            </div>
+            <p className="text-sm text-sky-100/90 leading-relaxed">
+              Based on your assignment spec, simply select the <b>Area / Zone</b> above. 
+              The map will automatically center itself exactly on that area. 
+              Then, click on the map to drop the marker for the facility.
+            </p>
+          </label>
+        </div>
 
         <div className="grid gap-5 md:grid-cols-2">
           <label className="block">
@@ -163,6 +220,9 @@ const FacilityForm = ({
           lat={formData.lat === '' ? null : Number(formData.lat)}
           lng={formData.lng === '' ? null : Number(formData.lng)}
           onChange={handleMapChange}
+          areaCenter={selectedAreaCenter}
+          facilityType={formData.type}
+          routePath={routePath}
         />
 
         {error ? (
@@ -178,7 +238,7 @@ const FacilityForm = ({
         ) : null}
 
         <div className="flex flex-col gap-3 sm:flex-row">
-          <button className="btn btn-primary justify-center gap-2" type="submit" disabled={isSaving || isLoadingAreas}>
+          <button className="btn btn-primary justify-center gap-2" type="submit" disabled={isSaving || isLoadingData}>
             {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             {submitLabel}
           </button>

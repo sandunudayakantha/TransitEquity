@@ -39,10 +39,12 @@ const loadGoogleMapsScript = () => {
   return googleMapsScriptPromise;
 };
 
-const GoogleMapPicker = ({ lat, lng, onChange }) => {
+const GoogleMapPicker = ({ lat, lng, onChange, areaCenter = null, facilityType = 'Bus Stop', routePath = [] }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
+  const polylineRef = useRef(null);
+  const waypointsRef = useRef([]);
   const [mapState, setMapState] = useState({
     isLoading: true,
     error: '',
@@ -68,16 +70,33 @@ const GoogleMapPicker = ({ lat, lng, onChange }) => {
         const map = new maps.Map(mapRef.current, {
           center: startingPosition,
           zoom: Number.isFinite(lat) && Number.isFinite(lng) ? 12 : 8,
+          styles: [
+            { elementType: 'geometry', stylers: [{ color: '#1e293b' }] },
+            { elementType: 'labels.text.stroke', stylers: [{ color: '#1e293b' }] },
+            { elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+            { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#cbd5e1' }] },
+            { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+            { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#334155' }] },
+            { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+            { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f172a' }] },
+          ],
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
         });
 
+        let iconUrl = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+        if (facilityType === 'Bus Stop') iconUrl = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+        if (facilityType === 'Station') iconUrl = "http://maps.google.com/mapfiles/ms/icons/purple-dot.png";
+        if (facilityType === 'Parking') iconUrl = "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
+        if (facilityType === 'Bike Hub') iconUrl = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+
         const marker = new maps.Marker({
           position: startingPosition,
           map,
           draggable: true,
-          title: 'Selected area',
+          title: `Selected ${facilityType}`,
+          icon: iconUrl,
         });
 
         clickListener = map.addListener('click', (event) => {
@@ -89,6 +108,16 @@ const GoogleMapPicker = ({ lat, lng, onChange }) => {
 
         marker.addListener('dragend', (event) => {
           onChange(event.latLng.lat(), event.latLng.lng());
+        });
+
+        // Initialize an empty polyline
+        polylineRef.current = new maps.Polyline({
+          path: [],
+          geodesic: true,
+          strokeColor: '#38bdf8',
+          strokeOpacity: 0.8,
+          strokeWeight: 4,
+          map,
         });
 
         mapInstanceRef.current = map;
@@ -125,10 +154,69 @@ const GoogleMapPicker = ({ lat, lng, onChange }) => {
       return;
     }
 
+    let iconUrl = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+    if (facilityType === 'Bus Stop') iconUrl = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+    if (facilityType === 'Station') iconUrl = "http://maps.google.com/mapfiles/ms/icons/purple-dot.png";
+    if (facilityType === 'Parking') iconUrl = "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
+    if (facilityType === 'Bike Hub') iconUrl = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+
     const nextPosition = { lat, lng };
+    markerRef.current.setIcon(iconUrl);
+    markerRef.current.setTitle(`Selected ${facilityType}`);
     markerRef.current.setPosition(nextPosition);
     mapInstanceRef.current.panTo(nextPosition);
-  }, [lat, lng]);
+  }, [lat, lng, facilityType]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !polylineRef.current || !window.google?.maps) return;
+
+    // Clear existing waypoints
+    waypointsRef.current.forEach(w => w.setMap(null));
+    waypointsRef.current = [];
+
+    const maps = window.google.maps;
+    const path = routePath.map(p => ({ lat: p.lat, lng: p.lng }));
+    polylineRef.current.setPath(path);
+    
+    if (path.length > 0) {
+      const bounds = new maps.LatLngBounds();
+      
+      routePath.forEach(point => {
+        const pos = { lat: point.lat, lng: point.lng };
+        bounds.extend(pos);
+
+        // Add a prominent waypoint marker for context
+        const waypoint = new maps.Marker({
+          position: pos,
+          map: mapInstanceRef.current,
+          title: point.name || 'Route Point',
+          icon: {
+            path: maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: "#38bdf8",
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: "#ffffff",
+          },
+          clickable: false,
+        });
+        waypointsRef.current.push(waypoint);
+      });
+
+      mapInstanceRef.current.fitBounds(bounds);
+    }
+  }, [routePath, mapState.isLoading]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || mapState.isLoading || !areaCenter || !areaCenter.lat) return;
+    
+    // Auto-center the map to the selected area if no explicit coordinates have been dragged/typed yet
+    if (lat === null || String(lat) === '' || lng === null || String(lng) === '') {
+      const nextPosition = { lat: areaCenter.lat, lng: areaCenter.lng };
+      mapInstanceRef.current.panTo(nextPosition);
+      mapInstanceRef.current.setZoom(14);
+    }
+  }, [areaCenter, lat, lng, mapState.isLoading]);
 
   if (mapState.error) {
     return (
@@ -143,9 +231,17 @@ const GoogleMapPicker = ({ lat, lng, onChange }) => {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm text-slate-300">
-        <MapPin className="h-4 w-4 text-sky-300" />
-        Click the map or drag the marker to choose coordinates.
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-2 text-slate-300">
+          <MapPin className="h-4 w-4 text-sky-300" />
+          Click the map or drag the marker to choose coordinates.
+        </div>
+        {routePath.length > 0 && (
+          <div className="flex items-center gap-1.5 font-medium text-sky-400">
+            <div className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse"></div>
+            Transport Route Visualization Active
+          </div>
+        )}
       </div>
 
       <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900">

@@ -10,7 +10,7 @@ const LoginPage = ({ onLogin }) => {
   const location = useLocation();
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
+    password: '', 
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
