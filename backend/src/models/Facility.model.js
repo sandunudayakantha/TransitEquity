@@ -16,6 +16,11 @@ const facilitySchema = new mongoose.Schema({
     ref: 'Area', 
     required: true
   },
+  transportId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Transport',
+    required: false
+  },
   coordinates: {
     lat: { type: Number, required: true },
     lng: { type: Number, required: true }
