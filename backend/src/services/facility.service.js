@@ -5,12 +5,12 @@ export const createFacility = async (facilityData) => {
 };
 
 export const getAllFacilities = async () => {
-  return await Facility.find().populate('areaId', 'name city');
+  return await Facility.find().populate('areaId', 'name city').populate('transportId');
   //return await Facility.find();
 };
 
 export const getFacilityById = async (id) => {
-  return await Facility.findById(id).populate('areaId', 'name city');
+  return await Facility.findById(id).populate('areaId', 'name city').populate('transportId');
  //return await Facility.findById(id);
 };
 

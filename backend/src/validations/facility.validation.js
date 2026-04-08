@@ -9,7 +9,8 @@ export const createFacilitySchema = Joi.object({
     lng: Joi.number().min(-180).max(180).required()
   }).required(),
   hasDisabledAccess: Joi.boolean().default(false),
-  capacity: Joi.number().integer().min(0).required()
+  capacity: Joi.number().integer().min(0).required(),
+  transportId: Joi.string().hex().length(24).optional().label('Transport ID')
 });
 
 export const updateFacilitySchema = Joi.object({
@@ -21,5 +22,6 @@ export const updateFacilitySchema = Joi.object({
     lng: Joi.number().min(-180).max(180)
   }),
   hasDisabledAccess: Joi.boolean(),
-  capacity: Joi.number().integer().min(0)
+  capacity: Joi.number().integer().min(0),
+  transportId: Joi.string().hex().length(24).optional().label('Transport ID')
 }).min(1);
