@@ -39,6 +39,22 @@ const loadGoogleMapsScript = () => {
   return googleMapsScriptPromise;
 };
 
+const refreshMapLayout = (map) => {
+  if (!map || !window.google?.maps) {
+    return;
+  }
+
+  window.google.maps.event.trigger(map, 'resize');
+};
+
+const getUniquePointCount = (routePath) => {
+  const uniquePoints = new Set(
+    routePath.map((point) => `${Number(point.lat).toFixed(6)},${Number(point.lng).toFixed(6)}`),
+  );
+
+  return uniquePoints.size;
+};
+
 const GoogleMapPicker = ({ lat, lng, onChange, areaCenter = null, facilityType = 'Bus Stop', routePath = [] }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -49,10 +65,12 @@ const GoogleMapPicker = ({ lat, lng, onChange, areaCenter = null, facilityType =
     isLoading: true,
     error: '',
   });
+  const uniqueRoutePointCount = getUniquePointCount(routePath);
 
   useEffect(() => {
     let isMounted = true;
     let clickListener = null;
+    let resizeObserver = null;
 
     const initializeMap = async () => {
       try {
@@ -123,6 +141,21 @@ const GoogleMapPicker = ({ lat, lng, onChange, areaCenter = null, facilityType =
         mapInstanceRef.current = map;
         markerRef.current = marker;
 
+        if (window.ResizeObserver) {
+          resizeObserver = new window.ResizeObserver(() => {
+            refreshMapLayout(map);
+          });
+
+          if (mapRef.current) {
+            resizeObserver.observe(mapRef.current);
+          }
+        }
+
+        window.setTimeout(() => {
+          refreshMapLayout(map);
+          map.setCenter(startingPosition);
+        }, 0);
+
         if (isMounted) {
           setMapState({
             isLoading: false,
@@ -143,6 +176,9 @@ const GoogleMapPicker = ({ lat, lng, onChange, areaCenter = null, facilityType =
 
     return () => {
       isMounted = false;
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (clickListener) {
         window.google?.maps?.event.removeListener(clickListener);
       }
@@ -164,6 +200,7 @@ const GoogleMapPicker = ({ lat, lng, onChange, areaCenter = null, facilityType =
     markerRef.current.setIcon(iconUrl);
     markerRef.current.setTitle(`Selected ${facilityType}`);
     markerRef.current.setPosition(nextPosition);
+    refreshMapLayout(mapInstanceRef.current);
     mapInstanceRef.current.panTo(nextPosition);
   }, [lat, lng, facilityType]);
 
@@ -177,22 +214,27 @@ const GoogleMapPicker = ({ lat, lng, onChange, areaCenter = null, facilityType =
     const maps = window.google.maps;
     const path = routePath.map(p => ({ lat: p.lat, lng: p.lng }));
     polylineRef.current.setPath(path);
-    
+
     if (path.length > 0) {
       const bounds = new maps.LatLngBounds();
-      
-      routePath.forEach(point => {
+
+      routePath.forEach((point, index) => {
         const pos = { lat: point.lat, lng: point.lng };
         bounds.extend(pos);
 
-        // Add a prominent waypoint marker for context
+        // Show covered areas in route order so facility placement is easier.
         const waypoint = new maps.Marker({
           position: pos,
           map: mapInstanceRef.current,
           title: point.name || 'Route Point',
+          label: {
+            text: String(index + 1),
+            color: '#ffffff',
+            fontWeight: '700',
+          },
           icon: {
             path: maps.SymbolPath.CIRCLE,
-            scale: 8,
+            scale: 10,
             fillColor: "#38bdf8",
             fillOpacity: 1,
             strokeWeight: 2,
@@ -203,20 +245,41 @@ const GoogleMapPicker = ({ lat, lng, onChange, areaCenter = null, facilityType =
         waypointsRef.current.push(waypoint);
       });
 
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        bounds.extend({ lat, lng });
+      } else if (areaCenter?.lat && areaCenter?.lng) {
+        bounds.extend({ lat: Number(areaCenter.lat), lng: Number(areaCenter.lng) });
+      }
+
+      refreshMapLayout(mapInstanceRef.current);
       mapInstanceRef.current.fitBounds(bounds);
+      if (path.length === 1) {
+        mapInstanceRef.current.setZoom(14);
+      }
+    } else if (areaCenter?.lat && areaCenter?.lng) {
+      refreshMapLayout(mapInstanceRef.current);
+      mapInstanceRef.current.setCenter({
+        lat: Number(areaCenter.lat),
+        lng: Number(areaCenter.lng),
+      });
     }
-  }, [routePath, mapState.isLoading]);
+  }, [routePath, mapState.isLoading, lat, lng, areaCenter]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || mapState.isLoading || !areaCenter || !areaCenter.lat) return;
-    
+
+    if (routePath.length > 0) {
+      return;
+    }
+
     // Auto-center the map to the selected area if no explicit coordinates have been dragged/typed yet
     if (lat === null || String(lat) === '' || lng === null || String(lng) === '') {
       const nextPosition = { lat: areaCenter.lat, lng: areaCenter.lng };
+      refreshMapLayout(mapInstanceRef.current);
       mapInstanceRef.current.panTo(nextPosition);
       mapInstanceRef.current.setZoom(14);
     }
-  }, [areaCenter, lat, lng, mapState.isLoading]);
+  }, [areaCenter, lat, lng, mapState.isLoading, routePath.length]);
 
   if (mapState.error) {
     return (
@@ -243,6 +306,21 @@ const GoogleMapPicker = ({ lat, lng, onChange, areaCenter = null, facilityType =
           </div>
         )}
       </div>
+      {routePath.length === 1 ? (
+        <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-xs text-amber-100">
+          Only one covered area is available for this route, so the map can show a point but not a connecting route line.
+        </div>
+      ) : null}
+      {routePath.length >= 2 && uniqueRoutePointCount < 2 ? (
+        <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-xs text-amber-100">
+          The selected route points overlap at the same coordinates, so the line is collapsed into a single point.
+        </div>
+      ) : null}
+      {routePath.length === 0 ? (
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-slate-300">
+          No mapped covered areas were found for the selected route yet.
+        </div>
+      ) : null}
 
       <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900">
         {mapState.isLoading ? (
