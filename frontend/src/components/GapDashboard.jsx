@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 
 import { useGap } from '../context/GapContext';
@@ -7,12 +8,14 @@ import AreaSelector from './AreaSelector';
 import SeverityFilter from './SeverityFilter';
 import GapReportTable from './GapReportTable';
 import ExportButton from './ExportButton';
+import GapDetailPanel from './GapDetailPanel';
 
 // Safe proxy mock mapping auth dynamically if useAuth hook context shifts
 import { loadAuthSession } from '../lib/auth';
 const useAuth = () => {
    const session = loadAuthSession();
    return {
+      user: session?.user || null,
       userRole: session?.user?.role || 'admin', 
    };
 };
@@ -25,10 +28,12 @@ const GapDashboard = () => {
       fetchReports,
       triggerAnalysis,
       deleteReport,
-      clearError
+      clearError,
+      selectedReport,
+      setSelectedReport
    } = useGap();
 
-   const { userRole } = useAuth();
+   const { user, userRole } = useAuth();
 
    // Local Control States
    const [selectedArea, setSelectedArea] = useState(null);
@@ -80,6 +85,7 @@ const GapDashboard = () => {
 
    // Secure logical checking mapping roles dynamically
    const canAnalyze = userRole === 'admin' || userRole === 'planner';
+   const isCitizen = userRole === 'user' || userRole === 'citizen';
 
    return (
       <div className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-8 bg-gray-50/50 min-h-screen">
@@ -123,6 +129,32 @@ const GapDashboard = () => {
                <button onClick={clearError} className="p-1 text-red-400 hover:bg-red-100 hover:text-red-700 rounded-md transition-colors">
                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                </button>
+            </div>
+         )}
+
+         {/* Citizen Info Banner */}
+         {isCitizen && (
+            <div className="bg-blue-600 rounded-2xl p-6 shadow-xl text-white flex flex-col md:flex-row items-center justify-between gap-6 transform transition-all hover:scale-[1.01]">
+               <div className="flex items-center gap-4">
+                  <div className="bg-white/20 p-3 rounded-xl backdrop-blur-md">
+                     <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                     </svg>
+                  </div>
+                  <div>
+                     <h2 className="text-xl font-bold tracking-tight">Viewing Transportation Gaps</h2>
+                     <p className="text-blue-100 opacity-90 text-sm">See an issue in your area? Submit feedback to help us prioritize improvements!</p>
+                  </div>
+               </div>
+               <Link 
+                  to="/feedback" 
+                  className="bg-white text-blue-600 px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-blue-50 transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap"
+               >
+                  Report an Issue
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7-7 7" />
+                  </svg>
+               </Link>
             </div>
          )}
 
@@ -191,10 +223,20 @@ const GapDashboard = () => {
             </div>
 
             {/* Geographic Heatmap Render Array (2/3 Base Width) */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
                <div className="bg-white p-2 rounded-2xl shadow border border-gray-200">
-                  <GapHeatmap reports={filteredReports} />
+                  <GapHeatmap 
+                    reports={filteredReports} 
+                    onPointClick={(report) => setSelectedReport(report)}
+                  />
                </div>
+
+               {selectedReport && (
+                 <GapDetailPanel 
+                   report={selectedReport} 
+                   onClose={() => setSelectedReport(null)} 
+                 />
+               )}
             </div>
 
          </div>

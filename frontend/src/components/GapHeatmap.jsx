@@ -3,7 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 
-const GapHeatmap = ({ reports = [] }) => {
+const GapHeatmap = ({ reports = [], onPointClick }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const heatLayerRef = useRef(null);
@@ -92,7 +92,9 @@ const GapHeatmap = ({ reports = [] }) => {
           className: 'bg-white border-0 shadow-xl rounded-lg px-3 py-2 pointer-events-none',
           opacity: 0.95
         }
-      );
+      ).on('click', () => {
+        if (onPointClick) onPointClick(report);
+      });
 
       markersGroup.addLayer(circleMarker);
     });

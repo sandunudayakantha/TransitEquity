@@ -44,15 +44,51 @@ export const createFeedback = async (data) => {
 };
 
 export const getAllFeedback = async (filters = {}) => {
-  const query = {};
-  if (filters.status) query.status = filters.status;
-  if (filters.urgency) query.urgency = filters.urgency;
-  if (filters.areaId) query.areaId = filters.areaId;
-  if (filters.issueType) query.issueType = filters.issueType;
+  const pipeline = [];
 
-  return await Feedback.find(query)
-    .populate('areaId', 'name city')
-    .sort({ priorityScore: -1, createdAt: -1 });
+  // 1. Initial Filtering
+  const match = {};
+  if (filters.status) match.status = filters.status;
+  if (filters.urgency) match.urgency = filters.urgency;
+  if (filters.areaId) match.areaId = filters.areaId;
+  if (filters.issueType) match.issueType = filters.issueType;
+  
+  if (Object.keys(match).length > 0) {
+    pipeline.push({ $match: match });
+  }
+
+  // 2. Join with Area for name/city
+  pipeline.push({
+    $lookup: {
+      from: 'areas',
+      localField: 'areaId',
+      foreignField: '_id',
+      as: 'areaDetails'
+    }
+  }, { $unwind: '$areaDetails' });
+
+  // 3. Join with GapReport for current severity context
+  pipeline.push({
+    $lookup: {
+      from: 'gapreports',
+      let: { areaId: '$areaId' },
+      pipeline: [
+        { $match: { $expr: { $eq: ['$areaId', '$$areaId'] } } },
+        { $sort: { generatedAt: -1 } },
+        { $limit: 1 }
+      ],
+      as: 'latestGap'
+    }
+  }, {
+    $addFields: {
+      latestGap: { $arrayElemAt: ['$latestGap', 0] }
+    }
+  });
+
+  // 4. Final Sorting
+  pipeline.push({ $sort: { priorityScore: -1, createdAt: -1 } });
+
+  return await Feedback.aggregate(pipeline);
 };
 
 export const getFeedbackById = async (id) => {
@@ -69,7 +105,16 @@ export const updateFeedback = async (id, data) => {
 export const voteFeedback = async (id) => {
   const feedback = await Feedback.findById(id);
   if (!feedback) return null;
+  
   feedback.votes += 1;
+  
+  // ✅ AUTOMATED ESCALATION: 
+  // If votes > 50 and urgency is High, move to Reviewed automatically
+  if (feedback.votes > 50 && feedback.urgency === 'High' && feedback.status === 'Pending') {
+    feedback.status = 'Reviewed';
+    console.log(`🚀 Automated Escalation: Feedback ${id} moved to Reviewed due to high engagement.`);
+  }
+
   await feedback.save();
   return feedback;
 };

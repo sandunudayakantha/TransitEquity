@@ -59,13 +59,57 @@ export const analyzeGapForArea = async (areaId) => {
 };
 
 export const getAllReports = async (filters = {}) => {
-  const query = {};
-  if (filters.severity) query.severity = filters.severity;
-  if (filters.areaId) query.areaId = filters.areaId;
+  const pipeline = [];
 
-  return await GapReport.find(query)
-    .populate('areaId', 'name city')
-    .sort({ gapScore: -1 });
+  // 1. Initial Filtering
+  const match = {};
+  if (filters.severity) match.severity = filters.severity;
+  if (filters.areaId) match.areaId = filters.areaId;
+
+  if (Object.keys(match).length > 0) {
+    pipeline.push({ $match: match });
+  }
+
+  // 2. Join with Area
+  pipeline.push({
+    $lookup: {
+      from: 'areas',
+      localField: 'areaId',
+      foreignField: '_id',
+      as: 'areaDetails'
+    }
+  }, { $unwind: '$areaDetails' });
+
+  // 3. Join with Feedback to get counts of unresolved issues
+  pipeline.push({
+    $lookup: {
+      from: 'feedbacks',
+      let: { areaId: '$areaId' },
+      pipeline: [
+        { 
+          $match: { 
+            $expr: { 
+              $and: [
+                { $eq: ['$areaId', '$$areaId'] },
+                { $ne: ['$status', 'Resolved'] }
+              ]
+            } 
+          } 
+        }
+      ],
+      as: 'activeFeedback'
+    }
+  }, {
+    $addFields: {
+      unresolvedFeedbackCount: { $size: '$activeFeedback' },
+      totalPriorityScore: { $sum: '$activeFeedback.priorityScore' }
+    }
+  });
+
+  // 4. Final Sorting
+  pipeline.push({ $sort: { gapScore: -1 } });
+
+  return await GapReport.aggregate(pipeline);
 };
 
 export const getReportById = async (id) => {
