@@ -5,6 +5,7 @@ import {
   LogOut,
   Map,
   MapPinned,
+  MessageSquare,
   ShieldCheck,
   Ticket,
   TrainFront,
@@ -47,6 +48,11 @@ const sideNavItems = [
     label: 'Service Desk',
     to: '/admin/service-desk',
     icon: Ticket,
+  },
+  {
+    label: 'Community Feedback',
+    to: '/admin/feedback',
+    icon: MessageSquare,
   },
 ];
 

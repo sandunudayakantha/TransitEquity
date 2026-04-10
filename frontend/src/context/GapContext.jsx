@@ -23,9 +23,9 @@ export const GapProvider = ({ children }) => {
     setLoading(true);
     clearError();
     try {
-      const data = await gapService.getReports(filters);
-      // Ensure we always store an array, even if the API wraps it in an object
-      const reportsArray = Array.isArray(data) ? data : (data?.reports || []);
+      const response = await gapService.getReports(filters);
+      // ✅ Fix: Extract reports from the 'data' field as defined in the backend controller
+      const reportsArray = Array.isArray(response) ? response : (response?.data || []);
       setReports(reportsArray);
     } catch (err) {
       setError(err.message || 'An error occurred while fetching reports');

@@ -11,6 +11,9 @@ import RegisterPage from './pages/RegisterPage';
 import UsersPage from './pages/UsersPage';
 import TransportRoutesPage from './pages/TransportRoutesPage';
 import TransportFormPage from './pages/TransportFormPage';
+import GapAnalysisPage from './pages/GapAnalysisPage';
+import FeedbackPage from './pages/FeedbackPage';
+import AdminFeedbackPage from './pages/AdminFeedbackPage';
 
 function App() {
   const [session, setSession] = useState(() => loadAuthSession());
@@ -112,6 +115,39 @@ function App() {
         element={(
           <AdminRoute user={session?.user ?? null}>
             <TransportFormPage user={session?.user ?? null} onLogout={handleLogout} mode="edit" />
+          </AdminRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/gap-reports"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <GapAnalysisPage />
+          </AdminRoute>
+        )}
+      />
+      
+      {/* Community Context Routes */}
+      <Route
+        path="/gap-analysis"
+        element={session?.user ? <GapAnalysisPage /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/feedback"
+        element={session?.user ? <FeedbackPage /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/feedback/new"
+        element={session?.user ? <FeedbackPage /> : <Navigate to="/login" replace />}
+      />
+
+      {/* Admin Specific Feedback Management */}
+      <Route
+        path="/admin/feedback"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <AdminFeedbackPage user={session?.user ?? null} onLogout={handleLogout} />
           </AdminRoute>
         )}
       />

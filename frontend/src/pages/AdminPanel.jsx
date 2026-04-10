@@ -25,7 +25,7 @@ const adminCards = [
     title: 'Citizen feedback',
     description: 'Process community reports and track infrastructure resolution status.',
     icon: MessageSquare,
-    href: '/feedback'
+    href: '/admin/feedback'
   },
 ];
 

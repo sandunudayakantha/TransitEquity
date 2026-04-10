@@ -3,6 +3,17 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 
+// ✅ Fix for Chromium Console Warning: "Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true."
+// This patch ensures the heatmap's internal canvas context is optimized for pixel readback.
+const originalGetContext = HTMLCanvasElement.prototype.getContext;
+HTMLCanvasElement.prototype.getContext = function (type, attributes) {
+  if (type === '2d') {
+    if (!attributes) attributes = {};
+    attributes.willReadFrequently = true;
+  }
+  return originalGetContext.call(this, type, attributes);
+};
+
 const GapHeatmap = ({ reports = [], onPointClick }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -84,12 +95,36 @@ const GapHeatmap = ({ reports = [], onPointClick }) => {
       
       const areaName = area?.name || 'Unknown Area';
       
-      circleMarker.bindTooltip(
-        `<div class="text-center font-sans tracking-tight">
+      const tooltipContent = `<div class="text-center font-sans tracking-tight">
           <strong class="text-gray-800 block mb-[2px]">${areaName}</strong>
           <span class="text-gray-600 font-medium text-sm">Gap Score: <span class="text-blue-600">${gapScore.toLocaleString()}</span></span>
-        </div>`, 
-        {
+        </div>`;
+
+      // ✅ ADD PULSING RADAR FOR ALL HOTSPOTS WITH SEVERITY-BASED COLORING
+      const severityClass = 
+        report.severity === 'High' ? 'radar-pulse-high' :
+        report.severity === 'Medium' ? 'radar-pulse-medium' :
+        'radar-pulse-low';
+
+      const pulseIcon = L.divIcon({
+        className: `radar-pulse ${severityClass}`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      });
+
+      const pulseMarker = L.marker([lat, lng], { icon: pulseIcon });
+      
+      pulseMarker.bindTooltip(tooltipContent, {
+        direction: 'top',
+        className: 'bg-white border-0 shadow-xl rounded-lg px-3 py-2 pointer-events-none',
+        opacity: 0.95
+      }).on('click', () => {
+        if (onPointClick) onPointClick(report);
+      });
+
+      markersGroup.addLayer(pulseMarker);
+      
+      circleMarker.bindTooltip(tooltipContent, {
           direction: 'top',
           className: 'bg-white border-0 shadow-xl rounded-lg px-3 py-2 pointer-events-none',
           opacity: 0.95

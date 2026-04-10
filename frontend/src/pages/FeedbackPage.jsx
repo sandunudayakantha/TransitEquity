@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { MessageSquare, Users, LineChart, ChevronLeft, LayoutGrid } from 'lucide-react';
 import FeedbackForm from '../components/FeedbackForm';
 import FeedbackList from '../components/FeedbackList';
@@ -15,8 +15,25 @@ const useAuth = () => {
 
 const FeedbackPage = () => {
   const { user, userRole } = useAuth();
-  const [activeTab, setActiveTab] = useState('list'); // 'list' or 'new'
+  const location = useLocation();
+  
+  // ✅ Dynamically set initial tab based on route
+  const [activeTab, setActiveTab] = useState(location.pathname.endsWith('/new') ? 'new' : 'list');
+  const [statusFilter, setStatusFilter] = useState(''); // '' for all
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Sync tab if user navigates via browser buttons
+  useEffect(() => {
+    setActiveTab(location.pathname.endsWith('/new') ? 'new' : 'list');
+  }, [location.pathname]);
+
+  const statusOptions = [
+    { label: 'All', value: '' },
+    { label: 'Pending', value: 'Pending' },
+    { label: 'Reviewed', value: 'Reviewed' },
+    { label: 'Approved', value: 'Approved' },
+    { label: 'Resolved', value: 'Resolved' }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
@@ -114,10 +131,25 @@ const FeedbackPage = () => {
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex items-center justify-between mb-6 px-1">
                   <h3 className="text-xl font-black text-gray-800 tracking-tight">Community Issues</h3>
-                  <p className="text-xs font-bold text-gray-400">Sorted by Impact Score</p>
+                  <div className="flex bg-white border border-gray-100 p-1 rounded-xl shadow-sm overflow-x-auto no-scrollbar max-w-full">
+                    {statusOptions.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setStatusFilter(opt.value)}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                          statusFilter === opt.value
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <FeedbackList 
                   refreshTrigger={refreshTrigger} 
+                  filters={{ status: statusFilter }}
                   userRole={userRole} 
                 />
               </div>
