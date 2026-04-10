@@ -16,7 +16,8 @@ const GapReportTable = ({ reports = [], loading = false, onDelete, userRole }) =
 
   // Memoize sorted reports directly so it only recalculates when dependencies change natively
   const sortedReports = useMemo(() => {
-    const sortableReports = [...reports];
+    // Ensure reports is an array before trying to spread/sort
+    const sortableReports = Array.isArray(reports) ? [...reports] : [];
     if (sortConfig !== null) {
       sortableReports.sort((a, b) => {
         let aValue = a[sortConfig.key];

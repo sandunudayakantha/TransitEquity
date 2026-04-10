@@ -42,7 +42,10 @@ const GapHeatmap = ({ reports = [] }) => {
     const heatPoints = [];
     const markersGroup = L.layerGroup();
 
-    reports.forEach(report => {
+    // Ensure reports is an array before iterating
+    const safeReports = Array.isArray(reports) ? reports : [];
+
+    safeReports.forEach(report => {
       const coords = report?.areaId?.coordinates;
       if (!coords) return;
 

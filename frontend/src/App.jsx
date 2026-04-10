@@ -11,6 +11,7 @@ import RegisterPage from './pages/RegisterPage';
 import UsersPage from './pages/UsersPage';
 import TransportRoutesPage from './pages/TransportRoutesPage';
 import TransportFormPage from './pages/TransportFormPage';
+import GapAnalysisPage from './pages/GapAnalysisPage';
 
 function App() {
   const [session, setSession] = useState(() => loadAuthSession());
@@ -112,6 +113,14 @@ function App() {
         element={(
           <AdminRoute user={session?.user ?? null}>
             <TransportFormPage user={session?.user ?? null} onLogout={handleLogout} mode="edit" />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/gap-reports"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <GapAnalysisPage />
           </AdminRoute>
         )}
       />

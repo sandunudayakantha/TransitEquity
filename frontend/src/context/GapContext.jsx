@@ -24,7 +24,9 @@ export const GapProvider = ({ children }) => {
     clearError();
     try {
       const data = await gapService.getReports(filters);
-      setReports(data || []);
+      // Ensure we always store an array, even if the API wraps it in an object
+      const reportsArray = Array.isArray(data) ? data : (data?.reports || []);
+      setReports(reportsArray);
     } catch (err) {
       setError(err.message || 'An error occurred while fetching reports');
     } finally {
