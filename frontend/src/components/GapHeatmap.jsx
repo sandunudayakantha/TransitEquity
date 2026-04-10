@@ -46,7 +46,9 @@ const GapHeatmap = ({ reports = [], onPointClick }) => {
     const safeReports = Array.isArray(reports) ? reports : [];
 
     safeReports.forEach(report => {
-      const coords = report?.areaId?.coordinates;
+      // ✅ Handle both populated and aggregated structures
+      const area = report.areaDetails || report.areaId;
+      const coords = area?.coordinates;
       if (!coords) return;
 
       let lat, lng;
@@ -80,7 +82,7 @@ const GapHeatmap = ({ reports = [], onPointClick }) => {
         fillOpacity: 0
       });
       
-      const areaName = report.areaId?.name || 'Unknown Area';
+      const areaName = area?.name || 'Unknown Area';
       
       circleMarker.bindTooltip(
         `<div class="text-center font-sans tracking-tight">

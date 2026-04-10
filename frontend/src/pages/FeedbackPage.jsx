@@ -117,7 +117,7 @@ const FeedbackPage = () => {
                   <p className="text-xs font-bold text-gray-400">Sorted by Impact Score</p>
                 </div>
                 <FeedbackList 
-                  key={refreshTrigger} 
+                  refreshTrigger={refreshTrigger} 
                   userRole={userRole} 
                 />
               </div>

@@ -23,27 +23,27 @@ const GapReportTable = ({ reports = [], loading = false, onDelete, userRole }) =
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
 
-        // Specific Object Extractors dynamically capturing nested values cleanly 
-        if (sortConfig.key === 'areaName') {
-           aValue = a.areaId?.name || '';
-           bValue = b.areaId?.name || '';
-        } else if (sortConfig.key === 'population') {
-           aValue = a.areaId?.population || 0;
-           bValue = b.areaId?.population || 0;
-        }
+          // Specific Object Extractors dynamically capturing nested values cleanly 
+          if (sortConfig.key === 'areaName') {
+             aValue = (a.areaDetails?.name || a.areaId?.name || '');
+             bValue = (b.areaDetails?.name || b.areaId?.name || '');
+          } else if (sortConfig.key === 'population') {
+             aValue = (a.areaDetails?.population || a.areaId?.population || 0);
+             bValue = (b.areaDetails?.population || b.areaId?.population || 0);
+          }
 
-        // Basic alphanumeric sorting pipeline correctly scaled globally
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-    return sortableReports;
-  }, [reports, sortConfig]);
+          // Basic alphanumeric sorting pipeline correctly scaled globally
+          if (aValue < bValue) {
+            return sortConfig.direction === 'asc' ? -1 : 1;
+          }
+          if (aValue > bValue) {
+            return sortConfig.direction === 'asc' ? 1 : -1;
+          }
+          return 0;
+        });
+      }
+      return sortableReports;
+    }, [reports, sortConfig]);
 
   // Handle visual rendering logic checking Loading States strictly prioritizing UX natively
   if (loading) {
@@ -129,6 +129,12 @@ const GapReportTable = ({ reports = [], loading = false, onDelete, userRole }) =
             <th onClick={() => handleSort('severity')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
                Severity {renderSortArrow('severity')}
             </th>
+            <th onClick={() => handleSort('unresolvedFeedbackCount')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
+               Feedback {renderSortArrow('unresolvedFeedbackCount')}
+            </th>
+            <th onClick={() => handleSort('totalPriorityScore')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
+               Impact {renderSortArrow('totalPriorityScore')}
+            </th>
             <th onClick={() => handleSort('createdAt')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
                Date {renderSortArrow('createdAt')}
             </th>
@@ -138,8 +144,9 @@ const GapReportTable = ({ reports = [], loading = false, onDelete, userRole }) =
         <tbody className="bg-white divide-y divide-gray-100">
           {sortedReports.map((report, idx) => {
             const reportId = report._id || report.id;
-            const areaName = report.areaId?.name || 'Unknown';
-            const population = report.areaId?.population || 0;
+            const area = report.areaDetails || report.areaId;
+            const areaName = area?.name || 'Unknown';
+            const population = area?.population || 0;
             const dateParsed = report.createdAt ? new Date(report.createdAt).toISOString().split('T')[0] : 'N/A';
             const distance = typeof report.avgDistance === 'number' ? report.avgDistance.toFixed(1) : 'N/A';
             const score = typeof report.gapScore === 'number' ? report.gapScore.toFixed(2) : 'N/A';
@@ -156,6 +163,15 @@ const GapReportTable = ({ reports = [], loading = false, onDelete, userRole }) =
                 <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-800">{score}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                    {getSeverityBadge(report.severity)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                   <div className="flex items-center gap-1.5 font-bold text-gray-700">
+                      <span className={`w-2 h-2 rounded-full ${report.unresolvedFeedbackCount > 0 ? 'bg-amber-500 animate-pulse' : 'bg-gray-300'}`}></span>
+                      {report.unresolvedFeedbackCount || 0}
+                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap font-black text-blue-600">
+                   {report.totalPriorityScore?.toFixed(0) || 0}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-500">{dateParsed}</td>
                 

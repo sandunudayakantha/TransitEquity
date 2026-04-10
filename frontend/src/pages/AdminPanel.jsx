@@ -1,4 +1,4 @@
-import { ChartColumn, MapPinned, ShieldCheck, Users } from 'lucide-react';
+import { ChartColumn, MapPinned, MessageSquare, ShieldCheck, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../components/AdminLayout';
 
@@ -20,6 +20,12 @@ const adminCards = [
     description: 'Review transport equity gaps and prioritize action areas.',
     icon: ChartColumn,
     href: '/admin/gap-reports'
+  },
+  {
+    title: 'Citizen feedback',
+    description: 'Process community reports and track infrastructure resolution status.',
+    icon: MessageSquare,
+    href: '/feedback'
   },
 ];
 

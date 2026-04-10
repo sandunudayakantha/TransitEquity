@@ -7,9 +7,12 @@ const GapDetailPanel = ({ report, onClose }) => {
   const [localFeedback, setLocalFeedback] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // ✅ Extract metadata from aggregated areaDetails or populated areaId
+  const area = report?.areaDetails || report?.areaId;
   const areaId = report?.areaId?._id || report?.areaId;
-  const areaName = report?.areaId?.name || 'Selected Area';
-  const cityName = report?.areaId?.city || 'Unknown City';
+  const areaName = area?.name || 'Selected Area';
+  const cityName = area?.city || 'Unknown City';
+  const coordinates = area?.coordinates;
 
   useEffect(() => {
     if (areaId) {
@@ -110,7 +113,7 @@ const GapDetailPanel = ({ report, onClose }) => {
         {/* Feedback Action */}
         <div className="pt-4 border-t border-gray-100">
           <Link
-            to={`/feedback/new?areaId=${areaId}&areaName=${encodeURIComponent(areaName)}&lat=${report.areaId?.coordinates?.lat}&lng=${report.areaId?.coordinates?.lng}`}
+            to={`/feedback/new?areaId=${areaId}&areaName=${encodeURIComponent(areaName)}&lat=${coordinates?.lat}&lng=${coordinates?.lng}`}
             className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all hover:scale-[1.02] active:scale-95"
           >
             <MessageSquarePlus className="w-5 h-5" />

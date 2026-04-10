@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Send, MapPin, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
 import { createFeedback } from '../lib/feedback';
+import AreaSelector from './AreaSelector';
 import toast from 'react-hot-toast';
 
 const ISSUE_TYPES = [
@@ -40,6 +41,26 @@ const FeedbackForm = ({ onSuccess }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleAreaSelect = (area) => {
+    if (area) {
+      setFormData(prev => ({
+        ...prev,
+        areaId: area._id || area.id,
+        address: area.name,
+        coordinates: {
+          lat: area.coordinates?.lat || null,
+          lng: area.coordinates?.lng || null
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        areaId: '',
+        coordinates: { lat: null, lng: null }
+      }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -52,7 +73,20 @@ const FeedbackForm = ({ onSuccess }) => {
     const toastId = toast.loading("Submitting feedback...");
 
     try {
-      await createFeedback(formData);
+      // ✅ Clean Payload: Strip null coordinates to satisfy backend validation
+      const payload = { ...formData };
+      if (payload.coordinates.lat === null || payload.coordinates.lng === null) {
+        delete payload.coordinates;
+      }
+      
+      // Secondary check for areaId
+      if (!payload.areaId) {
+        toast.error("Please select an area on the map first.", { id: toastId });
+        setIsLoading(false);
+        return;
+      }
+
+      await createFeedback(payload);
       toast.success("Feedback submitted! Our planners will review it shortly.", { id: toastId });
       
       if (onSuccess) onSuccess();
@@ -124,38 +158,66 @@ const FeedbackForm = ({ onSuccess }) => {
 
       {/* Location / Area */}
       <div className="space-y-2">
-        <label className="text-sm font-bold text-gray-500 uppercase">Location / Area</label>
-        <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            placeholder="e.g. Pettah Market, Colombo 11"
-            className="w-full pl-10 rounded-xl border-gray-200 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 text-sm p-3"
-            required
+        <label className="text-sm font-bold text-gray-500 uppercase">Target Transit Area</label>
+        {!queryParams.get('areaId') ? (
+          <AreaSelector 
+            onSelect={handleAreaSelect} 
+            placeholder="Search for an area (e.g. Pettah)..." 
           />
-        </div>
-        {formData.coordinates.lat && (
-          <p className="text-[10px] text-green-600 font-bold flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Geodata attached from Map
-          </p>
+        ) : (
+          <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center gap-2 text-sm font-bold text-gray-700">
+             <MapPin className="w-4 h-4 text-blue-500" />
+             {formData.address}
+          </div>
+        )}
+        
+        {formData.areaId && (
+          <div className="space-y-2 mt-4">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Detailed Address (Optional)</label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="e.g. Near Market Gate #2"
+                className="w-full pl-10 rounded-xl border-gray-200 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 text-sm p-3 transition-all"
+              />
+            </div>
+            {formData.coordinates.lat && (
+              <p className="text-[10px] text-green-600 font-black flex items-center gap-1 pl-1">
+                <CheckCircle2 className="w-3 h-3" /> PRECISION GEODATA ATTACHED
+              </p>
+            )}
+          </div>
         )}
       </div>
 
       {/* Description */}
       <div className="space-y-2">
-        <label className="text-sm font-bold text-gray-500 uppercase">Describe the issue</label>
+        <div className="flex justify-between items-end">
+          <label className="text-sm font-bold text-gray-500 uppercase">Describe the issue</label>
+          <span className={`text-[10px] font-black uppercase tracking-tighter ${formData.description.length < 10 ? 'text-amber-500' : 'text-green-600'}`}>
+            {formData.description.length} / 10 characters min
+          </span>
+        </div>
         <textarea
           name="description"
           value={formData.description}
           onChange={handleChange}
           rows="4"
           placeholder="Please explain the problem clearly. Mention specific roads, peak times, or accessibility barriers..."
-          className="w-full rounded-xl border-gray-200 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 text-sm p-3 resize-none"
+          className={`w-full rounded-xl border-gray-200 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 text-sm p-3 resize-none transition-all ${
+             formData.description.length > 0 && formData.description.length < 10 ? 'ring-1 ring-amber-200 bg-amber-50/10' : ''
+          }`}
           required
         ></textarea>
+        {formData.description.length > 0 && formData.description.length < 10 && (
+          <p className="text-[10px] text-amber-600 font-bold flex items-center gap-1 animate-in fade-in slide-in-from-top-1">
+            <AlertCircle className="w-3 h-3" /> Please add more detail to help our planners understand the impact.
+          </p>
+        )}
       </div>
 
       <button

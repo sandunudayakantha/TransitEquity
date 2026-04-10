@@ -5,13 +5,14 @@ import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = ['Pending', 'Reviewed', 'Approved', 'Resolved'];
 
-const FeedbackList = ({ filters = {}, userRole }) => {
+const FeedbackList = ({ filters = {}, userRole, refreshTrigger }) => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchFeedbacks = async () => {
     try {
-      setLoading(true);
+      // Only show full-screen loader if we have no data yet
+      if (feedbacks.length === 0) setLoading(true);
       const data = await getFeedbacks(filters);
       setFeedbacks(data);
     } catch (err) {
@@ -23,7 +24,7 @@ const FeedbackList = ({ filters = {}, userRole }) => {
 
   useEffect(() => {
     fetchFeedbacks();
-  }, [filters]);
+  }, [filters, refreshTrigger]);
 
   const handleStatusChange = async (id, newStatus) => {
     try {
