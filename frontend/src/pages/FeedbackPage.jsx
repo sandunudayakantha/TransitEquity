@@ -110,7 +110,7 @@ const FeedbackPage = () => {
                     <p className="text-xs text-blue-400 font-bold">Linked to Gap Analysis</p>
                   </div>
                </div>
-               <Link to="/admin/gap-reports" className="block text-center py-3 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-black transition-colors">
+               <Link to="/gap-analysis" className="block text-center py-3 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-black transition-colors">
                   View Gap Heatmap
                </Link>
             </div>

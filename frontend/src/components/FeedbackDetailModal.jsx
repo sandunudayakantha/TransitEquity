@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { 
   X, 
   MapPin, 
@@ -7,39 +7,34 @@ import {
   AlertTriangle, 
   TrendingUp, 
   ShieldCheck,
-  ExternalLink,
-  Calendar
+  Calendar,
+  Activity
 } from 'lucide-react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+const mapOptions = {
+  disableDefaultUI: true,
+  zoomControl: false,
+  mapTypeControl: false,
+  streetViewControl: false,
+  styles: [
+    {
+      featureType: "poi",
+      elementType: "labels",
+      stylers: [{ visibility: "off" }]
+    }
+  ]
+};
+
+const LIBRARIES = [];
 
 const FeedbackDetailModal = ({ feedback, isOpen, onClose }) => {
-  const [map, setMap] = useState(null);
-
-  useEffect(() => {
-    if (isOpen && feedback?.coordinates && !map) {
-      // Small Delay to ensure DOM is ready for Leaflet
-      const timer = setTimeout(() => {
-         const m = L.map(`detail-map-${feedback._id}`).setView([feedback.coordinates.lat, feedback.coordinates.lng], 15);
-         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
-         
-         // Mark the location
-         L.marker([feedback.coordinates.lat, feedback.coordinates.lng]).addTo(m)
-           .bindPopup("Reported Location")
-           .openPopup();
-         
-         setMap(m);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-    
-    return () => {
-      if (map) {
-        map.remove();
-        setMap(null);
-      }
-    };
-  }, [isOpen, feedback]);
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: LIBRARIES
+  });
 
   if (!isOpen || !feedback) return null;
 
@@ -58,6 +53,8 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose }) => {
     Resolved: 'bg-emerald-100 text-emerald-700'
   };
 
+  const coordinates = feedback.coordinates || { lat: 0, lng: 0 };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -72,7 +69,20 @@ const FeedbackDetailModal = ({ feedback, isOpen, onClose }) => {
         {/* Left Side: Map & Location */}
         <div className="w-full md:w-1/2 bg-gray-50 flex flex-col border-r border-gray-100">
            <div className="relative h-64 md:h-full">
-              <div id={`detail-map-${feedback._id}`} className="w-full h-full z-10" />
+              {isLoaded ? (
+                <GoogleMap
+                  mapContainerClassName="w-full h-full"
+                  center={coordinates}
+                  zoom={15}
+                  options={mapOptions}
+                >
+                  <Marker position={coordinates} />
+                </GoogleMap>
+              ) : (
+                <div className="w-full h-full bg-gray-200 animate-pulse flex items-center justify-center">
+                  <Activity className="w-8 h-8 text-gray-400 animate-spin" />
+                </div>
+              )}
               <div className="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur px-4 py-2 rounded-2xl border border-white/50 shadow-lg flex items-center gap-2">
                  <MapPin className="w-4 h-4 text-blue-600" />
                  <span className="text-xs font-black uppercase text-gray-800">Geographic Context</span>
