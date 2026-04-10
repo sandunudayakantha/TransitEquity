@@ -68,7 +68,7 @@ const router = express.Router();
  *       400:
  *         description: Validation error
  */
-router.post('/', createFeedback);
+router.post('/', protect, createFeedback);
 
 /**
  * @swagger
@@ -140,7 +140,7 @@ router.get('/:id', getFeedbackById);
  *       404:
  *         description: Feedback not found
  */
-router.put('/:id/vote', voteFeedback);
+router.put('/:id/vote', protect, voteFeedback);
 
 /**
  * @swagger

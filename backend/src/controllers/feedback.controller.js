@@ -14,6 +14,9 @@ export const createFeedback = async (req, res, next) => {
       });
     }
 
+    // ✅ Track the submitting user
+    req.body.submittedBy = req.user._id;
+
     const feedback = await feedbackService.createFeedback(req.body);
     
     // Customize message based on whether address was used
@@ -88,7 +91,7 @@ export const updateFeedback = async (req, res, next) => {
 
 export const voteFeedback = async (req, res, next) => {
   try {
-    const feedback = await feedbackService.voteFeedback(req.params.id);
+    const feedback = await feedbackService.voteFeedback(req.params.id, req.user._id);
     if (!feedback) {
       res.status(404);
       throw new Error('Feedback not found');
@@ -99,6 +102,9 @@ export const voteFeedback = async (req, res, next) => {
       data: feedback
     });
   } catch (error) {
+    if (error.message === 'User has already voted for this issue') {
+      res.status(400);
+    }
     next(error);
   }
 };

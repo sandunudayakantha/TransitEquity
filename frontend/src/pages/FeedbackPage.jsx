@@ -60,7 +60,7 @@ const FeedbackPage = () => {
             <div className="flex bg-gray-100 p-1 rounded-xl">
               <button
                 onClick={() => setActiveTab('list')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                   activeTab === 'list' 
                     ? 'bg-white text-blue-600 shadow-sm' 
                     : 'text-gray-500 hover:text-gray-700'
@@ -69,8 +69,18 @@ const FeedbackPage = () => {
                 Feed
               </button>
               <button
+                onClick={() => setActiveTab('mine')}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                  activeTab === 'mine' 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                My Feedback
+              </button>
+              <button
                 onClick={() => setActiveTab('new')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                   activeTab === 'new' 
                     ? 'bg-white text-blue-600 shadow-sm' 
                     : 'text-gray-500 hover:text-gray-700'
@@ -122,7 +132,7 @@ const FeedbackPage = () => {
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <FeedbackForm 
                   onSuccess={() => {
-                    setActiveTab('list');
+                    setActiveTab('mine');
                     setRefreshTrigger(prev => prev + 1);
                   }} 
                 />
@@ -130,7 +140,9 @@ const FeedbackPage = () => {
             ) : (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex items-center justify-between mb-6 px-1">
-                  <h3 className="text-xl font-black text-gray-800 tracking-tight">Community Issues</h3>
+                  <h3 className="text-xl font-black text-gray-800 tracking-tight">
+                    {activeTab === 'mine' ? 'My Submissions' : 'Community Issues'}
+                  </h3>
                   <div className="flex bg-white border border-gray-100 p-1 rounded-xl shadow-sm overflow-x-auto no-scrollbar max-w-full">
                     {statusOptions.map((opt) => (
                       <button
@@ -149,8 +161,12 @@ const FeedbackPage = () => {
                 </div>
                 <FeedbackList 
                   refreshTrigger={refreshTrigger} 
-                  filters={{ status: statusFilter }}
+                  filters={{ 
+                    status: statusFilter,
+                    submittedBy: activeTab === 'mine' ? user?.id || user?._id : undefined 
+                  }}
                   userRole={userRole} 
+                  user={user}
                 />
               </div>
             )}

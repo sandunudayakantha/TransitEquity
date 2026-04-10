@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { ThumbsUp, MapPin, Clock, AlertTriangle, Trash2 } from 'lucide-react';
+import { ThumbsUp, MapPin, Clock, AlertTriangle, Trash2, TrendingUp } from 'lucide-react';
 import { getFeedbacks, voteFeedback, deleteFeedback, updateFeedbackStatus } from '../lib/feedback';
 import toast from 'react-hot-toast';
+import FeedbackDetailModal from './FeedbackDetailModal';
 
 const STATUS_OPTIONS = ['Pending', 'Reviewed', 'Approved', 'Resolved'];
 
-const FeedbackList = ({ filters = {}, userRole, refreshTrigger }) => {
+const FeedbackList = ({ filters = {}, userRole, refreshTrigger, user }) => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedFeedback, setSelectedFeedback] = useState(null);
 
   const fetchFeedbacks = async () => {
     try {
@@ -37,12 +39,20 @@ const FeedbackList = ({ filters = {}, userRole, refreshTrigger }) => {
   };
 
   const handleVote = async (id) => {
+    if (!user) {
+      toast.error("Please login to upvote issues.");
+      return;
+    }
+
+    const feedback = feedbacks.find(f => f._id === id);
+    const wasVoted = feedback?.voters?.includes(user.id || user._id);
+
     try {
       const updated = await voteFeedback(id);
       setFeedbacks(prev => prev.map(f => f._id === id ? updated : f));
-      toast.success("Vote recorded!");
+      toast.success(wasVoted ? "Vote removed" : "Vote recorded!");
     } catch (err) {
-      toast.error("Failed to vote.");
+      toast.error("Failed to update vote.");
     }
   };
 
@@ -133,17 +143,43 @@ const FeedbackList = ({ filters = {}, userRole, refreshTrigger }) => {
                   {getUrgencyIcon(f.urgency)}
                   {f.urgency} Priority
                 </div>
+
+                <button 
+                  onClick={() => setSelectedFeedback(f)}
+                  className="mt-2 flex items-center gap-1.5 text-blue-600 font-black text-[10px] uppercase tracking-widest hover:text-blue-700 transition-colors group/details"
+                >
+                  View Details
+                  <span className="w-4 h-4 rounded-full bg-blue-50 flex items-center justify-center group-hover/details:translate-x-1 transition-transform">
+                     <TrendingUp className="w-2.5 h-2.5" />
+                  </span>
+                </button>
               </div>
             </div>
 
             <div className="flex flex-col items-center gap-2 pt-1">
-              <button 
-                onClick={() => handleVote(f._id)}
-                className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors flex flex-col items-center group/vote"
-              >
-                <ThumbsUp className="w-5 h-5 group-hover/vote:scale-110 transition-transform" />
-                <span className="text-xs font-bold mt-1">{f.votes}</span>
-              </button>
+              {(() => {
+                const hasVoted = user && f.voters?.includes(user.id || user._id);
+                return (
+                  <button 
+                    onClick={() => handleVote(f._id)}
+                    className={`p-3 rounded-xl transition-all duration-300 flex flex-col items-center group/vote relative overflow-hidden ${
+                      hasVoted 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                        : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                    }`}
+                  >
+                    <ThumbsUp className={`w-5 h-5 transition-transform ${hasVoted ? 'fill-current' : 'group-hover/vote:scale-110'}`} />
+                    <span className={`text-xs font-black mt-1 ${hasVoted ? 'text-white' : 'text-blue-600'}`}>
+                      {f.votes}
+                    </span>
+                    {hasVoted && (
+                      <div className="absolute top-0 right-0 p-0.5">
+                         <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shadow-sm" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })()}
               
               {userRole === 'admin' && (
                  <div className="mt-2 text-center">
@@ -164,6 +200,12 @@ const FeedbackList = ({ filters = {}, userRole, refreshTrigger }) => {
           </div>
         </div>
       ))}
+
+      <FeedbackDetailModal 
+        isOpen={!!selectedFeedback}
+        feedback={selectedFeedback}
+        onClose={() => setSelectedFeedback(null)}
+      />
     </div>
   );
 };

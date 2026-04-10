@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Feedback from '../models/Feedback.model.js';
 import { geocodeAddress } from '../utils/distanceApi.js';
 
@@ -50,8 +51,15 @@ export const getAllFeedback = async (filters = {}) => {
   const match = {};
   if (filters.status) match.status = filters.status;
   if (filters.urgency) match.urgency = filters.urgency;
-  if (filters.areaId) match.areaId = filters.areaId;
   if (filters.issueType) match.issueType = filters.issueType;
+  
+  if (filters.areaId && mongoose.Types.ObjectId.isValid(filters.areaId)) {
+    match.areaId = new mongoose.Types.ObjectId(filters.areaId);
+  }
+  
+  if (filters.submittedBy && mongoose.Types.ObjectId.isValid(filters.submittedBy)) {
+    match.submittedBy = new mongoose.Types.ObjectId(filters.submittedBy);
+  }
   
   if (Object.keys(match).length > 0) {
     pipeline.push({ $match: match });
@@ -102,11 +110,25 @@ export const updateFeedback = async (id, data) => {
   });
 };
 
-export const voteFeedback = async (id) => {
+export const voteFeedback = async (id, userId) => {
   const feedback = await Feedback.findById(id);
   if (!feedback) return null;
   
-  feedback.votes += 1;
+  // Check if user has already voted
+  const voterIndex = feedback.voters ? feedback.voters.indexOf(userId) : -1;
+
+  if (voterIndex !== -1) {
+    // Already voted -> UNVOTE (Remove)
+    feedback.voters.splice(voterIndex, 1);
+    feedback.votes = Math.max(0, feedback.votes - 1);
+    console.log(`📉 Vote removed by user ${userId} for feedback ${id}`);
+  } else {
+    // Not voted yet -> VOTE (Add)
+    if (!feedback.voters) feedback.voters = [];
+    feedback.voters.push(userId);
+    feedback.votes += 1;
+    console.log(`📈 Vote added by user ${userId} for feedback ${id}`);
+  }
   
   // ✅ AUTOMATED ESCALATION: 
   // If votes > 50 and urgency is High, move to Reviewed automatically

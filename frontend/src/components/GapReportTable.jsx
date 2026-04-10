@@ -1,195 +1,230 @@
 import React, { useState, useMemo } from 'react';
+import { 
+  Users, 
+  Bus, 
+  MapPin, 
+  Activity, 
+  MessageSquare, 
+  Flame, 
+  Trash2, 
+  ChevronDown, 
+  ChevronUp,
+  Clock,
+  LayoutGrid
+} from 'lucide-react';
 
 const GapReportTable = ({ reports = [], loading = false, onDelete, userRole }) => {
-  // Setup default state descending by 'gapScore'
   const [sortConfig, setSortConfig] = useState({ key: 'gapScore', direction: 'desc' });
 
-  // Handle clicking column headers
   const handleSort = (key) => {
     let direction = 'asc';
-    // Toggle direction if already sorting on this key
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
   };
 
-  // Memoize sorted reports directly so it only recalculates when dependencies change natively
   const sortedReports = useMemo(() => {
-    // Ensure reports is an array before trying to spread/sort
     const sortableReports = Array.isArray(reports) ? [...reports] : [];
     if (sortConfig !== null) {
       sortableReports.sort((a, b) => {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
 
-          // Specific Object Extractors dynamically capturing nested values cleanly 
-          if (sortConfig.key === 'areaName') {
-             aValue = (a.areaDetails?.name || a.areaId?.name || '');
-             bValue = (b.areaDetails?.name || b.areaId?.name || '');
-          } else if (sortConfig.key === 'population') {
-             aValue = (a.areaDetails?.population || a.areaId?.population || 0);
-             bValue = (b.areaDetails?.population || b.areaId?.population || 0);
-          }
+        if (sortConfig.key === 'areaName') {
+           aValue = (a.areaDetails?.name || a.areaId?.name || '');
+           bValue = (b.areaDetails?.name || b.areaId?.name || '');
+        } else if (sortConfig.key === 'population') {
+           aValue = (a.areaDetails?.population || a.areaId?.population || 0);
+           bValue = (b.areaDetails?.population || b.areaId?.population || 0);
+        }
 
-          // Basic alphanumeric sorting pipeline correctly scaled globally
-          if (aValue < bValue) {
-            return sortConfig.direction === 'asc' ? -1 : 1;
-          }
-          if (aValue > bValue) {
-            return sortConfig.direction === 'asc' ? 1 : -1;
-          }
-          return 0;
-        });
-      }
-      return sortableReports;
-    }, [reports, sortConfig]);
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return sortableReports;
+  }, [reports, sortConfig]);
 
-  // Handle visual rendering logic checking Loading States strictly prioritizing UX natively
   if (loading) {
      return (
-       <div className="w-full h-64 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm border border-gray-200 p-8 space-y-4">
-          <svg className="animate-spin h-10 w-10 text-blue-600" viewBox="0 0 24 24" fill="none">
-             <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span className="text-gray-500 font-medium">Loading Gap Reports...</span>
+       <div className="w-full h-96 flex flex-col items-center justify-center bg-white rounded-[2rem] border-2 border-dashed border-blue-100 p-8 space-y-4 animate-pulse">
+          <Activity className="w-12 h-12 text-blue-200 animate-bounce" />
+          <span className="text-blue-400 font-black uppercase text-xs tracking-widest">Aggregating Regional Insights...</span>
        </div>
      );
   }
 
-  // Gracefully handle UI empty states ensuring smooth visual integrity 
   if (!reports || reports.length === 0) {
      return (
-       <div className="w-full h-64 flex flex-col items-center justify-center bg-gray-50 rounded-xl shadow-sm border border-gray-200 border-dashed p-8">
-          <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-          </svg>
-          <span className="text-gray-500 font-medium text-lg tracking-tight">No gap reports available</span>
-          <p className="text-gray-400 text-sm mt-1">Try to analyze a new area or adjust filters to view data.</p>
+       <div className="w-full h-96 flex flex-col items-center justify-center bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200 p-8 text-center">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+             <LayoutGrid className="w-10 h-10 text-gray-300" />
+          </div>
+          <span className="text-gray-900 font-black text-xl tracking-tight">Infrastructure Void</span>
+          <p className="text-gray-400 text-sm mt-2 max-w-xs mx-auto">Analyze a district on the map to generate equity analytics and gap reports.</p>
        </div>
      );
   }
 
-  const renderSortArrow = (key) => {
-    if (sortConfig.key !== key) return null;
+  const getSeverityBadge = (severity) => {
+    const s = (severity || 'Low').toLowerCase();
+    const config = {
+      high: "bg-red-500 text-white border-red-400 ring-4 ring-red-500/10 animate-pulse",
+      medium: "bg-amber-400 text-white border-amber-300 ring-4 ring-amber-500/5",
+      low: "bg-emerald-500 text-white border-emerald-400 ring-4 ring-emerald-500/5"
+    };
+
     return (
-       <span className="ml-1 inline-block text-blue-500 font-bold">
-           {sortConfig.direction === 'asc' ? '↑' : '↓'}
-       </span>
+      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${config[s] || config.low}`}>
+        {severity}
+      </span>
     );
+  }
+
+  const HealthBar = ({ value, max = 200 }) => {
+     // Frequency health: Higher is better
+     const percentage = Math.min(100, (value / max) * 100);
+     const color = percentage > 60 ? 'bg-emerald-500' : percentage > 30 ? 'bg-amber-400' : 'bg-red-500';
+     return (
+        <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden border border-gray-200/50">
+           <div 
+             className={`h-full ${color} transition-all duration-1000`} 
+             style={{ width: `${percentage}%` }}
+           />
+        </div>
+     );
   };
 
-  const getSeverityBadge = (severity) => {
-     let defaultStyles = "bg-gray-100 text-gray-800 border-gray-200"; // Universal fallback
-     if (!severity) return defaultStyles;
-
-     // Assign matching tailwind pills perfectly natively
-     switch(severity.toLowerCase()) {
-         case 'high':
-            defaultStyles = "bg-red-50 text-red-700 border-red-200";
-            break;
-         case 'medium':
-            defaultStyles = "bg-yellow-50 text-yellow-700 border-yellow-300";
-            break;
-         case 'low':
-            defaultStyles = "bg-green-50 text-green-700 border-green-200";
-            break;
-     }
-
-     return (
-        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border shadow-sm ${defaultStyles}`}>
-           {severity.charAt(0).toUpperCase() + severity.slice(1)}
-        </span>
-     );
-  }
+  const ColumnHeader = ({ label, sortKey, icon: Icon }) => (
+    <th 
+      onClick={() => handleSort(sortKey)} 
+      className="group px-6 py-5 text-left cursor-pointer transition-colors hover:bg-white relative overflow-hidden"
+    >
+      <div className="flex items-center gap-2">
+        {Icon && <Icon className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />}
+        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-gray-900 transition-colors">{label}</span>
+        {sortConfig.key === sortKey ? (
+           sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 text-blue-600" /> : <ChevronDown className="w-3 h-3 text-blue-600" />
+        ) : (
+           <ChevronDown className="w-3 h-3 text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity" />
+        )}
+      </div>
+      {sortConfig.key === sortKey && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 animate-in slide-in-from-left duration-300" />}
+    </th>
+  );
 
   const isAdmin = userRole === 'admin';
 
   return (
-    <div className="overflow-x-auto w-full rounded-xl shadow-lg border border-gray-200 bg-white">
-      <table className="min-w-full divide-y divide-gray-200 text-sm">
-        <thead className="bg-gray-50/80 text-gray-600 border-b border-gray-200">
-          <tr>
-            <th onClick={() => handleSort('areaName')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
-               Area {renderSortArrow('areaName')}
-            </th>
-            <th onClick={() => handleSort('population')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
-               Population {renderSortArrow('population')}
-            </th>
-            <th onClick={() => handleSort('transportFrequency')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
-               Transport Freq {renderSortArrow('transportFrequency')}
-            </th>
-            <th onClick={() => handleSort('avgDistance')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
-               Avg Dist (km) {renderSortArrow('avgDistance')}
-            </th>
-            <th onClick={() => handleSort('gapScore')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
-               Gap Score {renderSortArrow('gapScore')}
-            </th>
-            <th onClick={() => handleSort('severity')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
-               Severity {renderSortArrow('severity')}
-            </th>
-            <th onClick={() => handleSort('unresolvedFeedbackCount')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
-               Feedback {renderSortArrow('unresolvedFeedbackCount')}
-            </th>
-            <th onClick={() => handleSort('totalPriorityScore')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
-               Impact {renderSortArrow('totalPriorityScore')}
-            </th>
-            <th onClick={() => handleSort('createdAt')} className="cursor-pointer px-6 py-4 text-left font-semibold uppercase tracking-wider hover:bg-gray-100 transition whitespace-nowrap">
-               Date {renderSortArrow('createdAt')}
-            </th>
-            {isAdmin && <th className="px-6 py-4 text-right font-semibold uppercase tracking-wider whitespace-nowrap">Actions</th>}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-100">
-          {sortedReports.map((report, idx) => {
-            const reportId = report._id || report.id;
-            const area = report.areaDetails || report.areaId;
-            const areaName = area?.name || 'Unknown';
-            const population = area?.population || 0;
-            const dateParsed = report.createdAt ? new Date(report.createdAt).toISOString().split('T')[0] : 'N/A';
-            const distance = typeof report.avgDistance === 'number' ? report.avgDistance.toFixed(1) : 'N/A';
-            const score = typeof report.gapScore === 'number' ? report.gapScore.toFixed(2) : 'N/A';
+    <div className="w-full bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-50/50 border-b border-gray-100">
+              <ColumnHeader label="Region Name" sortKey="areaName" icon={MapPin} />
+              <ColumnHeader label="Population" sortKey="population" icon={Users} />
+              <ColumnHeader label="Transit Health" sortKey="transportFrequency" icon={Bus} />
+              <ColumnHeader label="Gap Analytics" sortKey="gapScore" icon={Activity} />
+              <ColumnHeader label="Severity" sortKey="severity" />
+              <ColumnHeader label="Community" sortKey="unresolvedFeedbackCount" icon={MessageSquare} />
+              <ColumnHeader label="Impact Pulse" sortKey="totalPriorityScore" icon={Flame} />
+              {isAdmin && <th className="px-6 py-5 text-right text-[10px] font-black uppercase tracking-widest text-gray-400">Actions</th>}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {sortedReports.map((report, idx) => {
+              const area = report.areaDetails || report.areaId;
+              const areaName = area?.name || 'Unknown Zone';
+              const population = area?.population || 0;
+              const score = typeof report.gapScore === 'number' ? report.gapScore.toFixed(0) : '0';
+              const impact = report.totalPriorityScore || 0;
+              const freq = report.transportFrequency || 0;
 
-            return (
-              <tr 
-                key={reportId} 
-                className={`hover:bg-gray-50/80 transition-colors duration-150 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
-              >
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{areaName}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-600">{Number(population).toLocaleString()}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-600">{report.transportFrequency || 'N/A'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-600 font-medium">{distance}</td>
-                <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-800">{score}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                   {getSeverityBadge(report.severity)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                   <div className="flex items-center gap-1.5 font-bold text-gray-700">
-                      <span className={`w-2 h-2 rounded-full ${report.unresolvedFeedbackCount > 0 ? 'bg-amber-500 animate-pulse' : 'bg-gray-300'}`}></span>
-                      {report.unresolvedFeedbackCount || 0}
-                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap font-black text-blue-600">
-                   {report.totalPriorityScore?.toFixed(0) || 0}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-500">{dateParsed}</td>
-                
-                {isAdmin && (
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <button
-                      onClick={() => onDelete && onDelete(reportId)}
-                      className="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors duration-200 border border-transparent shadow-sm hover:border-red-200 focus:outline-none focus:ring-2 focus:ring-red-400"
-                    >
-                      Delete
-                    </button>
+              return (
+                <tr 
+                  key={report._id || idx} 
+                  className="group hover:bg-gray-50/80 transition-all duration-300"
+                >
+                  <td className="px-6 py-6">
+                    <div className="flex flex-col">
+                       <span className="text-base font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors">{areaName}</span>
+                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Digital ID: {report._id?.slice(-8)}</span>
+                    </div>
                   </td>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+
+                  <td className="px-6 py-6 font-bold text-gray-700">
+                    <div className="flex items-center gap-2">
+                       <span className="w-2 h-2 rounded-full bg-blue-100" />
+                       {Number(population).toLocaleString()}
+                    </div>
+                  </td>
+
+                  <td className="px-6 py-6">
+                    <div className="flex flex-col gap-1.5">
+                       <div className="flex items-center justify-between w-24">
+                          <span className="text-[10px] font-black text-gray-400">{freq} Trips</span>
+                       </div>
+                       <HealthBar value={freq} max={150} />
+                    </div>
+                  </td>
+
+                  <td className="px-6 py-6">
+                    <div className="flex flex-col">
+                       <span className="text-xl font-black text-slate-800 tracking-tighter">{Number(score).toLocaleString()}</span>
+                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Equity Deficit</span>
+                    </div>
+                  </td>
+
+                  <td className="px-6 py-6">
+                    {getSeverityBadge(report.severity)}
+                  </td>
+
+                  <td className="px-6 py-6">
+                    <div className="relative inline-block">
+                       <div className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl border ${report.unresolvedFeedbackCount > 0 ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-gray-50 border-gray-100 text-gray-400'}`}>
+                          <MessageSquare className={`w-3.5 h-3.5 ${report.unresolvedFeedbackCount > 0 ? 'fill-current opacity-20' : ''}`} />
+                          <span className="text-xs font-black">{report.unresolvedFeedbackCount || 0}</span>
+                       </div>
+                    </div>
+                  </td>
+
+                  <td className="px-6 py-6">
+                    <div className="flex items-center gap-2">
+                       <Flame className={`w-5 h-5 ${impact > 100 ? 'text-orange-500 fill-orange-500' : 'text-gray-300'} transition-colors`} />
+                       <span className={`text-lg font-black tracking-tighter ${impact > 100 ? 'text-orange-600' : 'text-gray-400'}`}>
+                          {impact.toFixed(0)}
+                       </span>
+                    </div>
+                  </td>
+
+                  {isAdmin && (
+                    <td className="px-6 py-6 text-right">
+                      <button
+                        onClick={() => onDelete && onDelete(report._id || report.id)}
+                        className="p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all duration-200 group/delete opacity-0 group-hover:opacity-100"
+                        title="Purge Analysis"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Table Footer / Pagination Placeholder */}
+      <div className="bg-gray-50/50 p-6 border-t border-gray-100 flex items-center justify-between text-gray-400">
+         <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
+            <Clock className="w-3.5 h-3.5" />
+            Live Database Sync Active
+         </div>
+         <span className="text-[10px] font-black uppercase tracking-widest">Total Regions: {reports.length}</span>
+      </div>
     </div>
   );
 };
