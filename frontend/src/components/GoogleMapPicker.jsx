@@ -39,18 +39,38 @@ const loadGoogleMapsScript = () => {
   return googleMapsScriptPromise;
 };
 
-const GoogleMapPicker = ({ lat, lng, onChange }) => {
+const refreshMapLayout = (map) => {
+  if (!map || !window.google?.maps) {
+    return;
+  }
+
+  window.google.maps.event.trigger(map, 'resize');
+};
+
+const getUniquePointCount = (routePath) => {
+  const uniquePoints = new Set(
+    routePath.map((point) => `${Number(point.lat).toFixed(6)},${Number(point.lng).toFixed(6)}`),
+  );
+
+  return uniquePoints.size;
+};
+
+const GoogleMapPicker = ({ lat, lng, onChange, areaCenter = null, facilityType = 'Bus Stop', routePath = [] }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
+  const polylineRef = useRef(null);
+  const waypointsRef = useRef([]);
   const [mapState, setMapState] = useState({
     isLoading: true,
     error: '',
   });
+  const uniqueRoutePointCount = getUniquePointCount(routePath);
 
   useEffect(() => {
     let isMounted = true;
     let clickListener = null;
+    let resizeObserver = null;
 
     const initializeMap = async () => {
       try {
@@ -68,16 +88,33 @@ const GoogleMapPicker = ({ lat, lng, onChange }) => {
         const map = new maps.Map(mapRef.current, {
           center: startingPosition,
           zoom: Number.isFinite(lat) && Number.isFinite(lng) ? 12 : 8,
+          styles: [
+            { elementType: 'geometry', stylers: [{ color: '#1e293b' }] },
+            { elementType: 'labels.text.stroke', stylers: [{ color: '#1e293b' }] },
+            { elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+            { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#cbd5e1' }] },
+            { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+            { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#334155' }] },
+            { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+            { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f172a' }] },
+          ],
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
         });
 
+        let iconUrl = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+        if (facilityType === 'Bus Stop') iconUrl = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+        if (facilityType === 'Station') iconUrl = "http://maps.google.com/mapfiles/ms/icons/purple-dot.png";
+        if (facilityType === 'Parking') iconUrl = "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
+        if (facilityType === 'Bike Hub') iconUrl = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+
         const marker = new maps.Marker({
           position: startingPosition,
           map,
           draggable: true,
-          title: 'Selected area',
+          title: `Selected ${facilityType}`,
+          icon: iconUrl,
         });
 
         clickListener = map.addListener('click', (event) => {
@@ -91,8 +128,33 @@ const GoogleMapPicker = ({ lat, lng, onChange }) => {
           onChange(event.latLng.lat(), event.latLng.lng());
         });
 
+        // Initialize an empty polyline
+        polylineRef.current = new maps.Polyline({
+          path: [],
+          geodesic: true,
+          strokeColor: '#38bdf8',
+          strokeOpacity: 0.8,
+          strokeWeight: 4,
+          map,
+        });
+
         mapInstanceRef.current = map;
         markerRef.current = marker;
+
+        if (window.ResizeObserver) {
+          resizeObserver = new window.ResizeObserver(() => {
+            refreshMapLayout(map);
+          });
+
+          if (mapRef.current) {
+            resizeObserver.observe(mapRef.current);
+          }
+        }
+
+        window.setTimeout(() => {
+          refreshMapLayout(map);
+          map.setCenter(startingPosition);
+        }, 0);
 
         if (isMounted) {
           setMapState({
@@ -114,6 +176,9 @@ const GoogleMapPicker = ({ lat, lng, onChange }) => {
 
     return () => {
       isMounted = false;
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (clickListener) {
         window.google?.maps?.event.removeListener(clickListener);
       }
@@ -125,10 +190,96 @@ const GoogleMapPicker = ({ lat, lng, onChange }) => {
       return;
     }
 
+    let iconUrl = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+    if (facilityType === 'Bus Stop') iconUrl = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+    if (facilityType === 'Station') iconUrl = "http://maps.google.com/mapfiles/ms/icons/purple-dot.png";
+    if (facilityType === 'Parking') iconUrl = "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
+    if (facilityType === 'Bike Hub') iconUrl = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+
     const nextPosition = { lat, lng };
+    markerRef.current.setIcon(iconUrl);
+    markerRef.current.setTitle(`Selected ${facilityType}`);
     markerRef.current.setPosition(nextPosition);
+    refreshMapLayout(mapInstanceRef.current);
     mapInstanceRef.current.panTo(nextPosition);
-  }, [lat, lng]);
+  }, [lat, lng, facilityType]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !polylineRef.current || !window.google?.maps) return;
+
+    // Clear existing waypoints
+    waypointsRef.current.forEach(w => w.setMap(null));
+    waypointsRef.current = [];
+
+    const maps = window.google.maps;
+    const path = routePath.map(p => ({ lat: p.lat, lng: p.lng }));
+    polylineRef.current.setPath(path);
+
+    if (path.length > 0) {
+      const bounds = new maps.LatLngBounds();
+
+      routePath.forEach((point, index) => {
+        const pos = { lat: point.lat, lng: point.lng };
+        bounds.extend(pos);
+
+        // Show covered areas in route order so facility placement is easier.
+        const waypoint = new maps.Marker({
+          position: pos,
+          map: mapInstanceRef.current,
+          title: point.name || 'Route Point',
+          label: {
+            text: String(index + 1),
+            color: '#ffffff',
+            fontWeight: '700',
+          },
+          icon: {
+            path: maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: "#38bdf8",
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: "#ffffff",
+          },
+          clickable: false,
+        });
+        waypointsRef.current.push(waypoint);
+      });
+
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        bounds.extend({ lat, lng });
+      } else if (areaCenter?.lat && areaCenter?.lng) {
+        bounds.extend({ lat: Number(areaCenter.lat), lng: Number(areaCenter.lng) });
+      }
+
+      refreshMapLayout(mapInstanceRef.current);
+      mapInstanceRef.current.fitBounds(bounds);
+      if (path.length === 1) {
+        mapInstanceRef.current.setZoom(14);
+      }
+    } else if (areaCenter?.lat && areaCenter?.lng) {
+      refreshMapLayout(mapInstanceRef.current);
+      mapInstanceRef.current.setCenter({
+        lat: Number(areaCenter.lat),
+        lng: Number(areaCenter.lng),
+      });
+    }
+  }, [routePath, mapState.isLoading, lat, lng, areaCenter]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || mapState.isLoading || !areaCenter || !areaCenter.lat) return;
+
+    if (routePath.length > 0) {
+      return;
+    }
+
+    // Auto-center the map to the selected area if no explicit coordinates have been dragged/typed yet
+    if (lat === null || String(lat) === '' || lng === null || String(lng) === '') {
+      const nextPosition = { lat: areaCenter.lat, lng: areaCenter.lng };
+      refreshMapLayout(mapInstanceRef.current);
+      mapInstanceRef.current.panTo(nextPosition);
+      mapInstanceRef.current.setZoom(14);
+    }
+  }, [areaCenter, lat, lng, mapState.isLoading, routePath.length]);
 
   if (mapState.error) {
     return (
@@ -143,10 +294,33 @@ const GoogleMapPicker = ({ lat, lng, onChange }) => {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm text-slate-300">
-        <MapPin className="h-4 w-4 text-sky-300" />
-        Click the map or drag the marker to choose coordinates.
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-2 text-slate-300">
+          <MapPin className="h-4 w-4 text-sky-300" />
+          Click the map or drag the marker to choose coordinates.
+        </div>
+        {routePath.length > 0 && (
+          <div className="flex items-center gap-1.5 font-medium text-sky-400">
+            <div className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse"></div>
+            Transport Route Visualization Active
+          </div>
+        )}
       </div>
+      {routePath.length === 1 ? (
+        <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-xs text-amber-100">
+          Only one covered area is available for this route, so the map can show a point but not a connecting route line.
+        </div>
+      ) : null}
+      {routePath.length >= 2 && uniqueRoutePointCount < 2 ? (
+        <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-xs text-amber-100">
+          The selected route points overlap at the same coordinates, so the line is collapsed into a single point.
+        </div>
+      ) : null}
+      {routePath.length === 0 ? (
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-slate-300">
+          No mapped covered areas were found for the selected route yet.
+        </div>
+      ) : null}
 
       <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900">
         {mapState.isLoading ? (
