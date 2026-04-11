@@ -14,6 +14,8 @@ import TransportFormPage from './pages/TransportFormPage';
 import GapAnalysisPage from './pages/GapAnalysisPage';
 import FeedbackPage from './pages/FeedbackPage';
 import AdminFeedbackPage from './pages/AdminFeedbackPage';
+import ManageFacilitiesPage from './pages/ManageFacilitiesPage';
+import FacilityFormPage from './pages/FacilityFormPage';
 
 function App() {
   const [session, setSession] = useState(() => loadAuthSession());
@@ -148,6 +150,31 @@ function App() {
         element={(
           <AdminRoute user={session?.user ?? null}>
             <AdminFeedbackPage user={session?.user ?? null} onLogout={handleLogout} />
+          </AdminRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/facilities"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <ManageFacilitiesPage user={session?.user ?? null} onLogout={handleLogout} />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/facilities/new"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <FacilityFormPage user={session?.user ?? null} onLogout={handleLogout} mode="create" />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/facilities/:facilityId/edit"
+        element={(
+          <AdminRoute user={session?.user ?? null}>
+            <FacilityFormPage user={session?.user ?? null} onLogout={handleLogout} mode="edit" />
           </AdminRoute>
         )}
       />
