@@ -1,72 +1,72 @@
 import axios from 'axios';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
 /**
- * Geocode address to coordinates using Nominatim (OpenStreetMap)
+ * Geocode address to coordinates using Google Maps Geocoding API
  */
 export const geocodeAddress = async (address) => {
   try {
-    console.log(`🌍 Geocoding address: "${address}"`);
-    
-    // Add a small delay to respect rate limits (1 request/second)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log(`🌍 Geocoding address via Google: "${address}"`);
     
     const response = await axios.get(
-      'https://nominatim.openstreetmap.org/search',
+      'https://maps.googleapis.com/maps/api/geocode/json',
       {
         params: {
-          q: address,
-          format: 'json',
-          limit: 1
-        },
-        headers: {
-          'User-Agent': 'TransitEquity-App/1.0' // Identify your app
+          address: address,
+          key: API_KEY
         }
       }
     );
 
-    if (response.data && response.data.length > 0) {
-      const result = response.data[0];
-      console.log(`✅ Found: lat ${result.lat}, lng ${result.lon}`);
+    if (response.data.status === 'OK' && response.data.results.length > 0) {
+      const result = response.data.results[0];
+      const { lat, lng } = result.geometry.location;
+      console.log(`✅ Found: lat ${lat}, lng ${lng}`);
       return {
-        lat: parseFloat(result.lat),
-        lng: parseFloat(result.lon),
-        formattedAddress: result.display_name
+        lat: parseFloat(lat),
+        lng: parseFloat(lng),
+        formattedAddress: result.formatted_address
       };
     }
     
-    console.log(`❌ No results found for: "${address}"`);
+    console.log(`❌ No results found for: "${address}" (Status: ${response.data.status})`);
     return null;
   } catch (error) {
-    console.error('Geocoding error:', error.message);
+    console.error('Google Geocoding error:', error.message);
     return null;
   }
 };
 
 /**
- * Calculate driving distance using OSRM
+ * Calculate driving distance using Google Distance Matrix API
  */
 export const calculateDrivingDistance = async (origin, destination) => {
   try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}`;
-    
-    const response = await axios.get(url, {
-      params: {
-        overview: 'false',
-        alternatives: 'false',
-        steps: 'false'
+    const response = await axios.get(
+      'https://maps.googleapis.com/maps/api/distancematrix/json',
+      {
+        params: {
+          origins: `${origin.lat},${origin.lng}`,
+          destinations: `${destination.lat},${destination.lng}`,
+          mode: 'driving',
+          key: API_KEY
+        }
       }
-    });
+    );
 
-    if (response.data.code === 'Ok' && response.data.routes?.length > 0) {
-      const distanceInMeters = response.data.routes[0].distance;
+    if (response.data.status === 'OK' && response.data.rows[0].elements[0].status === 'OK') {
+      const distanceInMeters = response.data.rows[0].elements[0].distance.value;
       return parseFloat((distanceInMeters / 1000).toFixed(2));
     }
 
-    // Fallback if API fails
+    console.log('⚠️ Google Distance Matrix returned non-OK status. Falling back.');
     return fallbackDistance(origin, destination);
 
   } catch (error) {
-    console.error('OSRM API error:', error.message);
+    console.error('Google Distance Matrix error:', error.message);
     return fallbackDistance(origin, destination);
   }
 };

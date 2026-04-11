@@ -32,8 +32,8 @@ const Navbar = ({ user, onLogout }) => {
           
           <div className="hidden md:flex items-center gap-8">
             <Link to="/" className="nav-link text-accent">Home</Link>
-            <a href="#features" className="nav-link">Features</a>
-            <a href="#issues" className="nav-link">Issues</a>
+            <Link to="/gap-analysis" className="nav-link">Gap Analysis</Link>
+            <Link to="/feedback" className="nav-link">Feedback Feed</Link>
           </div>
 
           <div className="flex items-center gap-4">

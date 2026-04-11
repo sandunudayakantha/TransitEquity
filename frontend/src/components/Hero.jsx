@@ -45,18 +45,17 @@ const Hero = ({ user }) => {
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button className="btn btn-primary w-full sm:w-auto px-8 py-4 text-lg gap-2" type="button" onClick={handlePrimaryAction}>
-              {user?.role === 'admin' ? 'Open Admin Panel' : 'Login to Continue'}
+              {user?.role === 'admin' ? 'Open Admin Panel' : user ? 'View Community Feed' : 'Login to Continue'}
               <ArrowRight className="w-5 h-5" />
             </button>
-            {!user ? (
-              <button className="btn btn-secondary w-full sm:w-auto px-8 py-4 text-lg" type="button" onClick={() => navigate('/register')}>
-                Create Account
-              </button>
-            ) : (
-              <button className="btn btn-secondary w-full sm:w-auto px-8 py-4 text-lg">
-                View Active Routes
-              </button>
-            )}
+            <button 
+              className="btn bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto px-8 py-4 text-lg shadow-lg shadow-blue-100 flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95" 
+              type="button" 
+              onClick={() => navigate('/gap-analysis')}
+            >
+              Analyze Gaps
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            </button>
           </div>
         </div>
       </div>

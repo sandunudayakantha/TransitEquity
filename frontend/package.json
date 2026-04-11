@@ -10,11 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.2.11",
+    "@deck.gl/core": "^9.2.11",
+    "@deck.gl/google-maps": "^9.2.11",
+    "@deck.gl/layers": "^9.2.11",
+    "@react-google-maps/api": "^2.20.8",
     "@tailwindcss/vite": "^4.2.2",
     "axios": "^1.13.6",
     "lucide-react": "^0.577.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.13.1"
   },
   "devDependencies": {

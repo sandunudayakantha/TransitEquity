@@ -11,8 +11,9 @@ import RegisterPage from './pages/RegisterPage';
 import UsersPage from './pages/UsersPage';
 import TransportRoutesPage from './pages/TransportRoutesPage';
 import TransportFormPage from './pages/TransportFormPage';
-import ManageFacilitiesPage from './pages/ManageFacilitiesPage';
-import FacilityFormPage from './pages/FacilityFormPage';
+import GapAnalysisPage from './pages/GapAnalysisPage';
+import FeedbackPage from './pages/FeedbackPage';
+import AdminFeedbackPage from './pages/AdminFeedbackPage';
 
 function App() {
   const [session, setSession] = useState(() => loadAuthSession());
@@ -117,27 +118,36 @@ function App() {
           </AdminRoute>
         )}
       />
+
       <Route
-        path="/admin/facilities"
+        path="/admin/gap-reports"
         element={(
           <AdminRoute user={session?.user ?? null}>
-            <ManageFacilitiesPage user={session?.user ?? null} onLogout={handleLogout} />
+            <GapAnalysisPage />
           </AdminRoute>
         )}
       />
+      
+      {/* Community Context Routes */}
       <Route
-        path="/admin/facilities/new"
-        element={(
-          <AdminRoute user={session?.user ?? null}>
-            <FacilityFormPage user={session?.user ?? null} onLogout={handleLogout} mode="create" />
-          </AdminRoute>
-        )}
+        path="/gap-analysis"
+        element={session?.user ? <GapAnalysisPage /> : <Navigate to="/login" replace />}
       />
       <Route
-        path="/admin/facilities/:facilityId/edit"
+        path="/feedback"
+        element={session?.user ? <FeedbackPage /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/feedback/new"
+        element={session?.user ? <FeedbackPage /> : <Navigate to="/login" replace />}
+      />
+
+      {/* Admin Specific Feedback Management */}
+      <Route
+        path="/admin/feedback"
         element={(
           <AdminRoute user={session?.user ?? null}>
-            <FacilityFormPage user={session?.user ?? null} onLogout={handleLogout} mode="edit" />
+            <AdminFeedbackPage user={session?.user ?? null} onLogout={handleLogout} />
           </AdminRoute>
         )}
       />

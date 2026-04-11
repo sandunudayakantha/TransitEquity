@@ -30,11 +30,19 @@ const feedbackSchema = new mongoose.Schema(
       required: [true, 'Urgency is required']
     },
     votes: { type: Number, default: 0, min: 0 },
+    voters: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
     priorityScore: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ['Pending', 'Reviewed', 'Approved', 'Resolved'],
       default: 'Pending'
+    },
+    submittedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
     }
   },
   { timestamps: true }
