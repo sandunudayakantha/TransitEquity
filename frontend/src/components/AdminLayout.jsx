@@ -7,7 +7,6 @@ import {
   MapPinned,
   MessageSquare,
   ShieldCheck,
-  Ticket,
   TrainFront,
   Users,
 } from 'lucide-react';
@@ -45,11 +44,6 @@ const sideNavItems = [
     icon: ChartColumn,
   },
   {
-    label: 'Service Desk',
-    to: '/admin/service-desk',
-    icon: Ticket,
-  },
-  {
     label: 'Community Feedback',
     to: '/admin/feedback',
     icon: MessageSquare,
@@ -62,9 +56,9 @@ const AdminLayout = ({ user, onLogout, title, eyebrow, children }) => {
       <aside className="border-b border-white/10 bg-slate-900 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col px-6 py-8">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-sky-300">TransitEquity</p>
+            <p className="text-sm uppercase tracking-[0.25em] text-white">TransitEquity</p>
             <h1 className="mt-3 text-2xl font-bold">Admin Panel</h1>
-            <p className="mt-3 text-sm text-slate-300">
+            <p className="mt-3 text-sm text-white">
               Manage operations, coverage, and community issues from one place.
             </p>
           </div>
@@ -79,7 +73,7 @@ const AdminLayout = ({ user, onLogout, title, eyebrow, children }) => {
                   `flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition ${
                     isActive
                       ? 'bg-sky-400/15 text-white ring-1 ring-sky-300/30'
-                      : 'bg-white/0 text-slate-300 hover:bg-white/5 hover:text-white'
+                      : 'bg-white/0 text-white hover:bg-white/5 hover:text-white'
                   }`
                 }
               >
@@ -90,12 +84,12 @@ const AdminLayout = ({ user, onLogout, title, eyebrow, children }) => {
           </nav>
 
           <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-5">
-            <div className="inline-flex items-center gap-2 rounded-full bg-sky-400/10 px-3 py-1 text-xs text-sky-200">
+            <div className="inline-flex items-center gap-2 rounded-full bg-sky-400/10 px-3 py-1 text-xs text-white">
               <ShieldCheck className="h-4 w-4" />
               Admin access confirmed
             </div>
             <p className="mt-4 text-lg font-semibold">{user?.name}</p>
-            <p className="mt-1 text-sm text-slate-300">Role: {user?.role}</p>
+            <p className="mt-1 text-sm text-white">Role: {user?.role}</p>
           </div>
 
           <div className="mt-auto flex flex-col gap-3 pt-8">
@@ -114,10 +108,10 @@ const AdminLayout = ({ user, onLogout, title, eyebrow, children }) => {
         <header className="border-b border-white/10 bg-slate-950/95 backdrop-blur">
           <div className="flex items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
             <div>
-              <p className="text-sm uppercase tracking-[0.25em] text-sky-300">{eyebrow}</p>
+              <p className="text-sm uppercase tracking-[0.25em] text-white">{eyebrow}</p>
               <h2 className="mt-2 text-3xl font-bold">{title}</h2>
             </div>
-            <span className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 sm:inline-flex">
+            <span className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white sm:inline-flex">
               Signed in as {user?.name}
             </span>
           </div>

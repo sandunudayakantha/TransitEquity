@@ -1,15 +1,18 @@
-# TransitEquity Backend
+# TransitEquity - Transportation Service Gap Analyzer
 
-TransitEquity is a backend system designed to manage transit data, analyze coverage gaps, and collect user feedback to improve public transportation equity.
+TransitEquity is a full-stack MERN (MongoDB, Express, React, Node) application designed to identify and visualize gaps in public transportation services. It provides administrators with powerful tools for infrastructure management, community feedback monitoring, and automated gap analysis to improve transit equity in underserved areas.
 
-## Setup Instructions
+---
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v16+)
-- [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) account or local MongoDB instance
+## 🚀 Setup Instructions
 
-### Installation
-1. Clone the repository and navigate to the `backend` directory:
+### 1. Prerequisites
+- **Node.js** (v18+)
+- **MongoDB** (Atlas account or local instance)
+- **Google Maps API Key** (with Maps JavaScript API and Geocoding API enabled)
+
+### 2. Backend Setup
+1. Navigate to the `backend` directory:
    ```bash
    cd backend
    ```
@@ -17,128 +20,136 @@ TransitEquity is a backend system designed to manage transit data, analyze cover
    ```bash
    npm install
    ```
-3. Create a `.env` file based on the following template:
+3. Create a `.env` file in the `backend` root:
    ```env
    PORT=5001
    MONGO_URI=your_mongodb_connection_string
    JWT_SECRET=your_jwt_secret
    NODE_ENV=development
+   GOOGLE_MAPS_API_KEY=your_google_maps_key
+   ```
+4. Start the server:
+   ```bash
+   npm run dev
    ```
 
-### Running the Application
-- **Development Mode** (with nodemon):
+### 3. Frontend Setup
+1. Navigate to the `frontend` directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file in the `frontend` root:
+   ```env
+   VITE_GOOGLE_MAPS_API_KEY=your_google_maps_key
+   VITE_API_BASE_URL=http://localhost:5001
+   ```
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 📡 API Endpoint Documentation
+
+The API supports **JSON** request/response formats. Most administrative endpoints require a **JSON Web Token (JWT)** passed in the `Authorization` header as `Bearer <token>` or via cookies.
+
+### Authentication
+| Method | Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :--- |
+| POST | `/api/auth/register` | Register a new user | No |
+| POST | `/api/auth/login` | Authenticate and get token | No |
+| GET  | `/api/auth/me` | Get current user profile | Yes |
+| POST | `/api/auth/logout` | Clear session | Yes |
+
+### Infrastructure Management
+| Method | Endpoint | Description | Role Required |
+| :--- | :--- | :--- | :--- |
+| GET    | `/api/facilities` | List facilities (paginated) | All authenticated |
+| POST   | `/api/facilities` | Create new facility | Admin / iOfficer |
+| GET    | `/api/areas` | List areas (paginated) | All authenticated |
+| POST   | `/api/areas` | Create new area | Admin |
+| GET    | `/api/transports` | List transit routes (paginated) | All authenticated |
+| POST   | `/api/transports` | Create new transit route | Admin |
+
+### Community & Analysis
+| Method | Endpoint | Description | Role Required |
+| :--- | :--- | :--- | :--- |
+| GET    | `/api/feedback` | List community reports (paginated) | Admin |
+| POST   | `/api/feedback` | Submit new community report | All authenticated |
+| PUT    | `/api/feedback/:id/vote` | Upvote/Downvote report | All authenticated |
+| POST   | `/api/gap/analyze` | Trigger automated gap analysis | Admin / Planner |
+| GET    | `/api/gap/reports` | View generated gap reports | All authenticated |
+
+> [!TIP]
+> **Detailed Swagger Documentation**: Browse to `http://localhost:5001/api-docs` while the server is running for interactive endpoint testing.
+
+---
+
+## 🧪 Testing Instruction Report
+
+### i. Unit Testing
+- **Goal**: Validate isolated logic (e.g., input validation, scoring algorithms).
+- **Execution**:
   ```bash
-  npm run dev
+  npm test src/tests/utils.test.js
   ```
-- **Production Mode**:
+- **Context**: These tests use `Mock HTTP` objects and do not require a database connection.
+
+### ii. Integration Testing
+- **Goal**: Verify that controllers, services, and MongoDB work together correctly.
+- **Execution**:
   ```bash
-  npm start
+  npm test
   ```
+- **Setup**:
+  - Requires a working `MONGO_URI` in `.env`.
+  - The test suite uses **Supertest** to simulate API calls and resets the database after each run.
 
-### Running Tests
-Execute the integration test suite using Jest:
-```bash
-npm test
-```
+### iii. Performance Testing
+- **Goal**: Evaluate API response times and throughput under load.
+- **Execution**:
+  ```bash
+  # Ensure the backend server is running first
+  npm run test:performance
+  ```
+- **Context**: Uses **Artillery.io**. The test lasts 5 minutes, ramping up from 2 to 10 users/sec.
 
-## API Documentation
-
-The API follows RESTful principles. Authentication is handled via JWT stored in cookies or Bearer tokens.
-
-
-
-
-### 1. Authentication (`/api/auth`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| POST | `/register` | Public | Register a new user |
-| POST | `/login` | Public | Login and receive JWT |
-| GET | `/me` | User | Get current user profile |
+### iv. Testing Environment Configuration
+- **Database**: Tests use the same database connection as configured in `.env`. It is recommended to use a separate "Test" database on MongoDB Atlas.
+- **Timeout**: Integration tests have a default timeout of 10,000ms to allow for database latency.
 
 ---
 
-### 2. User Management (`/api/users`)
+## 🚢 Deployment Report
 
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| GET | `/` | Admin | Get all users |
-| GET | `/pending` | Admin | Get unapproved users |
-| PUT | `/:id/approve` | Admin | Approve a pending user |
+### Backend: Render Deployment
+1. **GitHub Connection**: Connect your repository to Render.
+2. **Environment**: Select `Node`.
+3. **Build Command**: `npm install`
+4. **Start Command**: `npm start`
+5. **Environment Variables**:
+   - `NODE_ENV`: `production`
+   - `MONGO_URI`: (Your production MongoDB connection string)
+   - `JWT_SECRET`: (A strong random string)
+   - `CLIENT_URL`: `https://your-frontend.vercel.app`
 
----
-
-### 3. Area Management (`/api/areas`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| POST | `/` | Admin | Create a new transit area |
-| GET | `/` | User | Get all areas |
-| GET | `/:id` | User | Get area details |
-| PUT | `/:id` | Admin | Update area details |
-| DELETE | `/:id` | Admin | Delete an area |
-
----
-
-### 4. Facility Management (`/api/facilities`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| POST | `/` | Admin/iOfficer | Create a facility (Bus Stop, Station, etc.) |
-| GET | `/` | User | List all facilities |
-| GET | `/:id` | User | Get facility details |
-| PUT | `/:id` | Admin/iOfficer | Update facility |
-| DELETE | `/:id` | Admin/iOfficer | Delete facility |
+### Frontend: Vercel Deployment
+1. **Framework Preset**: `Vite`
+2. **Build Command**: `npm run build`
+3. **Output Directory**: `dist`
+4. **Environment Variables**:
+   - `VITE_API_BASE_URL`: `https://your-backend.onrender.com`
+   - `VITE_GOOGLE_MAPS_API_KEY`: (Your Maps API Key)
 
 ---
 
-### 5. Transport & Route Management (`/api/transports`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| POST | `/` | Admin/tOfficer | Create a transport route |
-| GET | `/` | User | List all routes |
-| GET | `/:id` | User | Get route details |
-| PUT | `/:id` | Admin/tOfficer | Update route |
-| DELETE | `/:id` | Admin/tOfficer | Delete route |
-
----
-
-### 6. Service Status Tracking (`/api/services`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| POST | `/` | Admin/tOfficer | Create a service status record |
-| GET | `/` | User | List all service statuses |
-| GET | `/active` | User | Get active services |
-| GET | `/delayed` | User | Get delayed services |
-| PUT | `/:id` | Admin/tOfficer | Update status (Active, Delayed, etc.) |
-| DELETE | `/:id` | Admin/tOfficer | Delete status record |
-
----
-
-### 7. Feedback Module (`/api/feedback`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| POST | `/` | Public | Submit new feedback |
-| GET | `/` | Public | Get all feedback (sorted by priority) |
-| GET | `/:id` | Public | Get feedback details |
-| PUT | `/:id/vote` | Public | Upvote a feedback |
-| PUT | `/:id` | Officer/Admin | Update feedback status |
-| DELETE | `/:id` | Admin | Delete feedback |
-
----
-
-### 8. Gap Analysis (`/api/gap`)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| POST | `/analyze` | Admin/Planner | Trigger gap analysis for an area |
-| GET | `/reports` | User | Get all gap reports |
-| GET | `/reports/:id` | User | Get individual report details |
-| DELETE | `/reports/:id` | Admin | Delete a report |
-
----
-
-
+## 🛠 Tech Stack
+- **Frontend**: React, Vite, Lucide Icons, Axios, TailwindCSS.
+- **Backend**: Node.js, Express, Mongoose, JSON Web Tokens.
+- **Database**: MongoDB (NoSQL).
+- **Quality Assurance**: Jest, Supertest, Artillery.io, Swagger.

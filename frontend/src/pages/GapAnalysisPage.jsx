@@ -1,5 +1,6 @@
 import React from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { GapProvider } from '../context/GapContext';
 import GapDashboard from '../components/GapDashboard';
 import { loadAuthSession } from '../lib/auth';
@@ -9,11 +10,12 @@ const useAuth = () => {
     const session = loadAuthSession();
     return {
         isAuthenticated: !!session?.token,
-        userRole: session?.user?.role || null, 
+        userRole: session?.user?.role || (session?.token ? 'user' : null), 
     };
 };
 
 const GapAnalysisPage = () => {
+  const navigate = useNavigate();
   const { isAuthenticated, userRole } = useAuth();
 
   // Authentication Gatekeeper Rules explicitly handling stateless JWT routing skips gracefully
@@ -32,6 +34,18 @@ const GapAnalysisPage = () => {
     <div className="min-h-[100dvh] bg-gray-50/50 pt-8 pb-12 w-full flex flex-col">
       
       {/* Structural Master Breadcrumbs Map */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 w-full mb-4">
+        <button 
+          onClick={() => navigate(-1)}
+          className="group inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 transition-all duration-200"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm border border-gray-200 group-hover:border-blue-200 group-hover:bg-blue-50 transition-all">
+            <ArrowLeft className="h-4 w-4" />
+          </div>
+          <span>Back</span>
+        </button>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 w-full mb-2">
         <nav className="flex items-center text-sm font-semibold text-gray-500 space-x-2">
           

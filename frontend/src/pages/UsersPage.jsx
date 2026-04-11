@@ -21,21 +21,29 @@ const UsersPage = ({ user, onLogout }) => {
   const [users, setUsers] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [activeView, setActiveView] = useState('approvals');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [stats, setStats] = useState({ adminCount: 0, officerCount: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [approvingId, setApprovingId] = useState(null);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const loadUsers = async () => {
+  const loadUsers = async (page = 1) => {
     setIsLoading(true);
 
     try {
-      const [allUsers, pending] = await Promise.all([
-        fetchUsers(),
+      const [userData, pending] = await Promise.all([
+        fetchUsers(page, 10),
         fetchPendingUsers(),
       ]);
 
-      setUsers(allUsers);
+      setUsers(userData.users || []);
+      setTotalUsers(userData.totalUsers || 0);
+      setTotalPages(userData.pages || 1);
+      setCurrentPage(userData.page || 1);
+      setStats(userData.stats || { adminCount: 0, officerCount: 0 });
       setPendingUsers(pending);
     } catch (requestError) {
       setError(requestError.response?.data?.message || 'Failed to load users.');
@@ -45,8 +53,8 @@ const UsersPage = ({ user, onLogout }) => {
   };
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    loadUsers(currentPage);
+  }, [currentPage]);
 
   const handleApprove = async (userId) => {
     setError('');
@@ -119,16 +127,16 @@ const UsersPage = ({ user, onLogout }) => {
           <>
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Pending officers</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white">Pending officers</p>
                 <p className="mt-3 text-3xl font-bold text-white">{pendingOfficerCount}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Total pending</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white">Total pending</p>
                 <p className="mt-3 text-3xl font-bold text-white">{pendingUsers.length}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Approved users</p>
-                <p className="mt-3 text-3xl font-bold text-white">{users.filter((account) => account.isApproved).length}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white">Approved users</p>
+                <p className="mt-3 text-3xl font-bold text-white">{totalUsers - pendingUsers.length}</p>
               </div>
             </div>
 
@@ -188,16 +196,16 @@ const UsersPage = ({ user, onLogout }) => {
           <>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Total users</p>
-                <p className="mt-3 text-3xl font-bold text-white">{users.length}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white">Total users</p>
+                <p className="mt-3 text-3xl font-bold text-white">{totalUsers}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Admins</p>
-                <p className="mt-3 text-3xl font-bold text-white">{users.filter((account) => account.role === 'admin').length}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white">Admins</p>
+                <p className="mt-3 text-3xl font-bold text-white">{stats.adminCount}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Officers</p>
-                <p className="mt-3 text-3xl font-bold text-white">{users.filter((account) => ['tOfficer', 'iOfficer'].includes(account.role)).length}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white">Officers</p>
+                <p className="mt-3 text-3xl font-bold text-white">{stats.officerCount}</p>
               </div>
             </div>
 
@@ -208,62 +216,107 @@ const UsersPage = ({ user, onLogout }) => {
                   Loading users...
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-white/10">
-                    <thead className="bg-white/5">
-                      <tr>
-                        <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Name</th>
-                        <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Role</th>
-                        <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Email</th>
-                        <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Phone</th>
-                        <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Status</th>
-                        <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Access</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/10">
-                      {users.map((account) => (
-                        <tr key={account._id} className="hover:bg-white/5">
-                          <td className="px-5 py-4 text-sm text-white">
-                            <div className="font-medium text-white">{account.name}</div>
-                            <div className="mt-1 text-xs text-slate-300">
-                              Joined {new Date(account.createdAt).toLocaleDateString()}
-                            </div>
-                          </td>
-                          <td className="px-5 py-4 text-sm">
-                            <span className={`rounded-full px-3 py-1 text-xs font-medium ${roleBadgeClassNames[account.role] || 'bg-white/10 text-white'}`}>
-                              {roleLabels[account.role] || account.role}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-sm text-white">{account.email}</td>
-                          <td className="px-5 py-4 text-sm text-white">{account.phoneNumber || 'Not provided'}</td>
-                          <td className="px-5 py-4 text-sm">
-                            <span className={`rounded-full px-3 py-1 text-xs font-medium ${account.isApproved ? 'bg-emerald-400/10 text-emerald-200' : 'bg-amber-400/10 text-amber-200'}`}>
-                              {account.isApproved ? 'Approved' : 'Pending'}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-sm text-white">
-                            {account.role === 'admin' ? (
-                              <span className="inline-flex items-center gap-2">
-                                <Shield className="h-4 w-4 text-sky-300" />
-                                Full access
-                              </span>
-                            ) : account.isApproved ? (
-                              <span className="inline-flex items-center gap-2">
-                                <BadgeCheck className="h-4 w-4 text-emerald-300" />
-                                Active account
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-2">
-                                <Clock3 className="h-4 w-4 text-amber-300" />
-                                Waiting approval
-                              </span>
-                            )}
-                          </td>
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-white/10">
+                      <thead className="bg-white/5">
+                        <tr>
+                          <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-white">Name</th>
+                          <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-white">Role</th>
+                          <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-white">Email</th>
+                          <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-white">Phone</th>
+                          <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-white">Status</th>
+                          <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.2em] text-white">Access</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-white/10">
+                        {users.map((account) => (
+                          <tr key={account._id} className="hover:bg-white/5">
+                            <td className="px-5 py-4 text-sm text-white">
+                              <div className="font-medium text-white">{account.name}</div>
+                              <div className="mt-1 text-xs text-white">
+                                Joined {new Date(account.createdAt).toLocaleDateString()}
+                              </div>
+                            </td>
+                            <td className="px-5 py-4 text-sm">
+                              <span className={`rounded-full px-3 py-1 text-xs font-medium ${roleBadgeClassNames[account.role] || 'bg-white/10 text-white'}`}>
+                                {roleLabels[account.role] || account.role}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4 text-sm text-white">{account.email}</td>
+                            <td className="px-5 py-4 text-sm text-white">{account.phoneNumber || 'Not provided'}</td>
+                            <td className="px-5 py-4 text-sm">
+                              <span className={`rounded-full px-3 py-1 text-xs font-medium ${account.isApproved ? 'bg-emerald-400/10 text-emerald-200' : 'bg-amber-400/10 text-amber-200'}`}>
+                                {account.isApproved ? 'Approved' : 'Pending'}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4 text-sm text-white">
+                              {account.role === 'admin' ? (
+                                <span className="inline-flex items-center gap-2">
+                                  <Shield className="h-4 w-4 text-sky-300" />
+                                  Full access
+                                </span>
+                              ) : account.isApproved ? (
+                                <span className="inline-flex items-center gap-2">
+                                  <BadgeCheck className="h-4 w-4 text-emerald-300" />
+                                  Active account
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-2">
+                                  <Clock3 className="h-4 w-4 text-amber-300" />
+                                  Waiting approval
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination Controls */}
+                  <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 bg-white/5 px-6 py-4 sm:flex-row">
+                    <p className="text-sm text-white/60">
+                      Showing <span className="font-semibold text-white">{Math.min((currentPage - 1) * 10 + 1, totalUsers)}</span> to{' '}
+                      <span className="font-semibold text-white">{Math.min(currentPage * 10, totalUsers)}</span> of{' '}
+                      <span className="font-semibold text-white">{totalUsers}</span> users
+                    </p>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1 || isLoading}
+                        className="btn btn-secondary h-9 px-3 text-xs disabled:opacity-30 border-white/10"
+                      >
+                        Previous
+                      </button>
+                      
+                      <div className="flex items-center gap-1">
+                        {[...Array(totalPages)].map((_, i) => (
+                          <button
+                            key={i + 1}
+                            onClick={() => setCurrentPage(i + 1)}
+                            className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all ${
+                              currentPage === i + 1 
+                                ? 'bg-sky-500 text-white' 
+                                : 'text-white/60 hover:bg-white/10 hover:text-white'
+                            }`}
+                          >
+                            {i + 1}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages || isLoading}
+                        className="btn btn-secondary h-9 px-3 text-xs disabled:opacity-30 border-white/10"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </>

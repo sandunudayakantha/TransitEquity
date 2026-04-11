@@ -15,7 +15,7 @@ const Footer = () => {
               Making public transportation more equitable and efficient through community feedback.
             </p>
           </div>
-          
+
           <div>
             <h4 className="font-bold mb-6">Product</h4>
             <ul className="space-y-4">
@@ -24,7 +24,7 @@ const Footer = () => {
               <li><a href="#" className="nav-link">Roadmap</a></li>
             </ul>
           </div>
-          
+
           <div>
             <h4 className="font-bold mb-6">Support</h4>
             <ul className="space-y-4">
@@ -33,7 +33,7 @@ const Footer = () => {
               <li><a href="#" className="nav-link">Terms of Service</a></li>
             </ul>
           </div>
-          
+
           <div>
             <h4 className="font-bold mb-6">Stay Connected</h4>
             <div className="flex gap-4">
@@ -49,14 +49,13 @@ const Footer = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="border-t border-gray-100 pt-8 flex flex-col md:row justify-between items-center gap-4">
           <p className="text-secondary text-sm">
             © {new Date().getFullYear()} TransitEquity. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-sm text-secondary">
-            <span>Built with</span>
-            <span className="font-medium text-primary text-xs bg-gray-100 px-2 py-1 rounded">Vite + React + Tailwind v4</span>
+
           </div>
         </div>
       </div>

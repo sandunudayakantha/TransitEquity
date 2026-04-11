@@ -4,9 +4,18 @@ export const createFacility = async (facilityData) => {
   return await Facility.create(facilityData);
 };
 
-export const getAllFacilities = async () => {
-  return await Facility.find().populate('areaId', 'name city').populate('transportId');
-  //return await Facility.find();
+export const getAllFacilities = async (page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+  return await Facility.find()
+    .populate('areaId', 'name city')
+    .populate('transportId')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+};
+
+export const countFacilities = async () => {
+  return await Facility.countDocuments();
 };
 
 export const getFacilityById = async (id) => {

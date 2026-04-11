@@ -1,42 +1,26 @@
-import axios from 'axios';
-import { loadAuthSession } from './auth';
+import api from '../services/api';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
-
-const getRequestConfig = () => {
-  const session = loadAuthSession();
-
-  return {
-    headers: session?.token
-      ? {
-          Authorization: `Bearer ${session.token}`,
-        }
-      : {},
-    withCredentials: true,
-  };
-};
-
-export const fetchTransports = async () => {
-  const response = await axios.get(`${apiBaseUrl}/api/transports`, getRequestConfig());
+export const fetchTransports = async (page = 1, limit = 10) => {
+  const response = await api.get(`/api/transports?page=${page}&limit=${limit}`);
   return response.data;
 };
 
 export const fetchTransportById = async (transportId) => {
-  const response = await axios.get(`${apiBaseUrl}/api/transports/${transportId}`, getRequestConfig());
+  const response = await api.get(`/api/transports/${transportId}`);
   return response.data;
 };
 
 export const createTransport = async (payload) => {
-  const response = await axios.post(`${apiBaseUrl}/api/transports`, payload, getRequestConfig());
+  const response = await api.post(`/api/transports`, payload);
   return response.data;
 };
 
 export const updateTransport = async (transportId, payload) => {
-  const response = await axios.put(`${apiBaseUrl}/api/transports/${transportId}`, payload, getRequestConfig());
+  const response = await api.put(`/api/transports/${transportId}`, payload);
   return response.data;
 };
 
 export const deleteTransport = async (transportId) => {
-  const response = await axios.delete(`${apiBaseUrl}/api/transports/${transportId}`, getRequestConfig());
+  const response = await api.delete(`/api/transports/${transportId}`);
   return response.data;
 };

@@ -76,7 +76,7 @@ const AreaFormPage = ({ user, onLogout, mode }) => {
       </button>
 
       {isLoading ? (
-        <div className="flex items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60 px-6 py-16 text-slate-300">
+        <div className="flex items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60 px-6 py-16 text-white">
           <LoaderCircle className="mr-3 h-5 w-5 animate-spin" />
           Loading area details...
         </div>

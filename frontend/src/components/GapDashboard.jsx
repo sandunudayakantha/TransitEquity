@@ -50,8 +50,9 @@ const GapDashboard = () => {
 
    // Client-Side List Filtering Optimization
    const filteredReports = useMemo(() => {
-      if (severityFilter === 'all') return reports;
-      return reports.filter(r => r.severity?.toLowerCase() === severityFilter.toLowerCase());
+      const safeReports = Array.isArray(reports) ? reports : [];
+      if (severityFilter === 'all') return safeReports;
+      return safeReports.filter(r => r.severity?.toLowerCase() === severityFilter.toLowerCase());
    }, [reports, severityFilter]);
 
    const handleAnalyze = async () => {
@@ -84,7 +85,7 @@ const GapDashboard = () => {
    };
 
    // Secure logical checking mapping roles dynamically
-   const canAnalyze = userRole === 'admin' || userRole === 'planner';
+   const canAnalyze = ['admin', 'planner', 'tOfficer', 'iOfficer'].includes(userRole);
    const isCitizen = userRole === 'user' || userRole === 'citizen';
 
    return (

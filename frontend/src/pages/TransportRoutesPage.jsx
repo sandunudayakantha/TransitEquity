@@ -8,17 +8,28 @@ import ServiceStatusList from '../components/ServiceStatusList';
 const TransportRoutesPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [transports, setTransports] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRoutes, setTotalRoutes] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeletingId, setIsDeletingId] = useState(null);
   const [expandedRouteId, setExpandedRouteId] = useState(null);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const loadTransports = async () => {
+  const loadTransports = async (page = 1) => {
     setIsLoading(true);
     try {
-      const data = await fetchTransports();
-      setTransports(data);
+      const response = await fetchTransports(page, 10);
+      if (response && response.data) {
+        setTransports(response.data || []);
+        setTotalRoutes(response.total || 0);
+        setTotalPages(response.pages || 1);
+        setCurrentPage(response.page || 1);
+      } else {
+        setTransports(Array.isArray(response) ? response : []);
+        setTotalRoutes(Array.isArray(response) ? response.length : 0);
+      }
     } catch (requestError) {
       setError(requestError.response?.data?.message || requestError.response?.data?.error || 'Failed to load transport routes.');
     } finally {
@@ -27,8 +38,8 @@ const TransportRoutesPage = ({ user, onLogout }) => {
   };
 
   useEffect(() => {
-    loadTransports();
-  }, []);
+    loadTransports(currentPage);
+  }, [currentPage]);
 
   const handleDelete = async (transportId) => {
     const transport = transports.find((item) => item._id === transportId);
@@ -68,7 +79,7 @@ const TransportRoutesPage = ({ user, onLogout }) => {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white">
-              Total routes: <span className="font-semibold text-white">{transports.length}</span>
+              Total routes: <span className="font-semibold text-white">{totalRoutes}</span>
             </div>
             <Link className="btn btn-primary gap-2 justify-center" to="/admin/transports/new">
               <Plus className="h-4 w-4" />
@@ -91,7 +102,7 @@ const TransportRoutesPage = ({ user, onLogout }) => {
 
         <div className="mt-6 space-y-4">
           {isLoading ? (
-            <div className="flex items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60 px-6 py-16 text-slate-300">
+            <div className="flex items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60 px-6 py-16 text-white">
               <LoaderCircle className="mr-3 h-5 w-5 animate-spin" />
               Loading routes...
             </div>
@@ -120,7 +131,7 @@ const TransportRoutesPage = ({ user, onLogout }) => {
                         {route.serviceType === 'Bus' ? <Bus className="h-5 w-5" /> : <TrainFront className="h-5 w-5" />}
                       </div>
                       <h4 className="text-xl font-semibold text-white">Route {route.routeNumber}</h4>
-                      <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs font-medium text-slate-300">
+                      <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs font-medium text-white">
                         {route.serviceType}
                       </span>
                       <div className="ml-auto lg:hidden">
@@ -156,7 +167,7 @@ const TransportRoutesPage = ({ user, onLogout }) => {
                       {isDeletingId === route._id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       Delete
                     </button>
-                    <button className="hidden lg:flex btn bg-white/5 border border-white/10 text-slate-300 h-10 px-3 hover:bg-white/10" onClick={() => toggleExpand(route._id)}>
+                    <button className="hidden lg:flex btn bg-white/5 border border-white/10 text-white h-10 px-3 hover:bg-white/10" onClick={() => toggleExpand(route._id)}>
                        {expandedRouteId === route._id ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                     </button>
                   </div>
@@ -169,6 +180,51 @@ const TransportRoutesPage = ({ user, onLogout }) => {
                 )}
               </article>
             ))}
+
+          {/* Pagination Controls */}
+          {!isLoading && transports.length > 0 && (
+            <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 bg-white/5 px-6 py-4 sm:flex-row rounded-3xl mt-4">
+              <p className="text-sm text-white/60">
+                Showing <span className="font-semibold text-white">{Math.min((currentPage - 1) * 10 + 1, totalRoutes)}</span> to{' '}
+                <span className="font-semibold text-white">{Math.min(currentPage * 10, totalRoutes)}</span> of{' '}
+                <span className="font-semibold text-white">{totalRoutes}</span> routes
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || isLoading}
+                  className="btn btn-secondary h-9 px-3 text-xs disabled:opacity-30 border-white/10"
+                >
+                  Previous
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all ${
+                        currentPage === i + 1 
+                          ? 'bg-sky-500 text-white' 
+                          : 'text-white/60 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || isLoading}
+                  className="btn btn-secondary h-9 px-3 text-xs disabled:opacity-30 border-white/10"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </AdminLayout>

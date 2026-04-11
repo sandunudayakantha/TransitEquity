@@ -1,42 +1,26 @@
-import axios from 'axios';
-import { loadAuthSession } from './auth';
+import api from '../services/api';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
-
-const getRequestConfig = () => {
-  const session = loadAuthSession();
-
-  return {
-    headers: session?.token
-      ? {
-          Authorization: `Bearer ${session.token}`,
-        }
-      : {},
-    withCredentials: true,
-  };
-};
-
-export const fetchAreas = async () => {
-  const response = await axios.get(`${apiBaseUrl}/api/areas`, getRequestConfig());
+export const fetchAreas = async (page = 1, limit = 10) => {
+  const response = await api.get(`/api/areas?page=${page}&limit=${limit}`);
   return response.data;
 };
 
 export const fetchAreaById = async (areaId) => {
-  const response = await axios.get(`${apiBaseUrl}/api/areas/${areaId}`, getRequestConfig());
-  return response.data;
+  const response = await api.get(`/api/areas/${areaId}`);
+  return response.data.data || response.data;
 };
 
 export const createArea = async (payload) => {
-  const response = await axios.post(`${apiBaseUrl}/api/areas`, payload, getRequestConfig());
-  return response.data;
+  const response = await api.post(`/api/areas`, payload);
+  return response.data.data || response.data;
 };
 
 export const updateArea = async (areaId, payload) => {
-  const response = await axios.put(`${apiBaseUrl}/api/areas/${areaId}`, payload, getRequestConfig());
-  return response.data;
+  const response = await api.put(`/api/areas/${areaId}`, payload);
+  return response.data.data || response.data;
 };
 
 export const deleteArea = async (areaId) => {
-  const response = await axios.delete(`${apiBaseUrl}/api/areas/${areaId}`, getRequestConfig());
+  const response = await api.delete(`/api/areas/${areaId}`);
   return response.data;
 };

@@ -7,27 +7,39 @@ import { deleteArea, fetchAreas } from '../lib/areas';
 const ManageAreasPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [areas, setAreas] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalAreas, setTotalAreas] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeletingId, setIsDeletingId] = useState(null);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const loadAreas = async () => {
+  const loadAreas = async (page = 1) => {
     setIsLoading(true);
 
     try {
-      const data = await fetchAreas();
-      setAreas(data);
+      const response = await fetchAreas(page, 10);
+      // Handles both paginated and non-paginated responses for backward compatibility
+      if (response && response.data) {
+        setAreas(response.data || []);
+        setTotalAreas(response.total || 0);
+        setTotalPages(response.pages || 1);
+        setCurrentPage(response.page || 1);
+      } else {
+        setAreas(Array.isArray(response) ? response : []);
+        setTotalAreas(Array.isArray(response) ? response.length : 0);
+      }
     } catch (requestError) {
-      setError(requestError.response?.data?.message || requestError.response?.data?.error || 'Failed to load areas.');
+      setError(requestError.response?.data?.error || 'Failed to load areas.');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadAreas();
-  }, []);
+    loadAreas(currentPage);
+  }, [currentPage]);
 
   const handleDelete = async (areaId) => {
     const area = areas.find((item) => item._id === areaId);
@@ -64,7 +76,7 @@ const ManageAreasPage = ({ user, onLogout }) => {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white">
-              Total areas: <span className="font-semibold text-white">{areas.length}</span>
+              Total areas: <span className="font-semibold text-white">{totalAreas}</span>
             </div>
             <Link className="btn btn-primary gap-2 justify-center" to="/admin/areas/new">
               <Plus className="h-4 w-4" />
@@ -87,7 +99,7 @@ const ManageAreasPage = ({ user, onLogout }) => {
 
         <div className="mt-6 space-y-4">
           {isLoading ? (
-            <div className="flex items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60 px-6 py-16 text-slate-300">
+            <div className="flex items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60 px-6 py-16 text-white">
               <LoaderCircle className="mr-3 h-5 w-5 animate-spin" />
               Loading areas...
             </div>
@@ -106,7 +118,7 @@ const ManageAreasPage = ({ user, onLogout }) => {
                   <div>
                     <div className="flex flex-wrap items-center gap-3">
                       <h4 className="text-xl font-semibold text-white">{area.name}</h4>
-                      <span className="rounded-full bg-sky-400/10 px-3 py-1 text-xs font-medium text-sky-200">
+                      <span className="rounded-full bg-sky-400/10 px-3 py-1 text-xs font-medium text-white">
                         {area.city}
                       </span>
                     </div>
@@ -131,6 +143,51 @@ const ManageAreasPage = ({ user, onLogout }) => {
                 </div>
               </article>
             ))}
+
+          {/* Pagination Controls */}
+          {!isLoading && areas.length > 0 && (
+            <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 bg-white/5 px-6 py-4 sm:flex-row rounded-3xl mt-4">
+              <p className="text-sm text-white/60">
+                Showing <span className="font-semibold text-white">{Math.min((currentPage - 1) * 10 + 1, totalAreas)}</span> to{' '}
+                <span className="font-semibold text-white">{Math.min(currentPage * 10, totalAreas)}</span> of{' '}
+                <span className="font-semibold text-white">{totalAreas}</span> areas
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || isLoading}
+                  className="btn btn-secondary h-9 px-3 text-xs disabled:opacity-30 border-white/10"
+                >
+                  Previous
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all ${
+                        currentPage === i + 1 
+                          ? 'bg-sky-500 text-white' 
+                          : 'text-white/60 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || isLoading}
+                  className="btn btn-secondary h-9 px-3 text-xs disabled:opacity-30 border-white/10"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </AdminLayout>

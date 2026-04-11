@@ -1,0 +1,45 @@
+config:
+  target: "http://localhost:5001"
+  phases:
+    - duration: 60
+      arrivalRate: 2
+      name: Warm up
+    - duration: 120
+      arrivalRate: 2
+      rampTo: 10
+      name: Ramp up load
+    - duration: 120
+      arrivalRate: 10
+      name: Sustained load
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Public Search and Auth Baseline"
+    flow:
+      - log: "New virtual user started"
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "password123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      - log: "Login successful, fetching data"
+      - get:
+          url: "/api/facilities?page=1&limit=10"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      - think: 1
+      - get:
+          url: "/api/feedback?page=1&limit=10"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      - think: 2
+      - get:
+          url: "/api/areas?page=1&limit=10"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      - log: "Flow complete for user"

@@ -7,7 +7,7 @@ import api from '../services/api';
 export const getFeedbacks = async (filters = {}) => {
   try {
     const response = await api.get('/api/feedback', { params: filters });
-    return response.data?.data || [];
+    return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Failed to fetch feedbacks');
   }

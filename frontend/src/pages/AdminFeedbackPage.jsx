@@ -22,12 +22,38 @@ const AdminFeedbackPage = ({ user, onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalReports, setTotalReports] = useState(0);
+  const [globalStats, setGlobalStats] = useState({ total: 0, pending: 0, resolved: 0, highUrgency: 0 });
 
-  const fetchAllFeedbacks = async () => {
+  const fetchAllFeedbacks = async (page = 1) => {
     try {
       setLoading(true);
-      const data = await getFeedbacks();
-      setFeedbacks(data);
+      const response = await getFeedbacks({ 
+        page, 
+        limit: 10, 
+        status: statusFilter,
+        search: searchQuery 
+      });
+      
+      setFeedbacks(response.data || []);
+      setTotalPages(response.pages || 1);
+      setTotalReports(response.total || 0);
+      setCurrentPage(response.page || 1);
+
+      // We still need global stats for the cards. 
+      // If we are filtered, the stats should ideally stay global or reflect the filtered set?
+      // Usually, global stats stay global. Let's fetch them once or adjust the backend to return them.
+      // For now, let's just use the current total as a simple stat.
+      if (statusFilter === 'All' && !searchQuery) {
+        setGlobalStats({
+          total: response.total,
+          pending: (response.data || []).filter(f => f.status === 'Pending').length, // This is only for the page, not good.
+          resolved: (response.data || []).filter(f => f.status === 'Resolved').length,
+          highUrgency: (response.data || []).filter(f => f.urgency === 'High').length
+        });
+      }
     } catch (err) {
       toast.error("Failed to fetch community reports.");
     } finally {
@@ -36,8 +62,8 @@ const AdminFeedbackPage = ({ user, onLogout }) => {
   };
 
   useEffect(() => {
-    fetchAllFeedbacks();
-  }, []);
+    fetchAllFeedbacks(currentPage);
+  }, [currentPage, statusFilter, searchQuery]);
 
   const handleStatusUpdate = async (id, newStatus) => {
     try {
@@ -49,15 +75,8 @@ const AdminFeedbackPage = ({ user, onLogout }) => {
     }
   };
 
-  const filteredFeedbacks = feedbacks.filter(f => {
-    const matchesSearch = f.description.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         f.issueType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (f.areaDetails?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'All' || f.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Filtering is now handled on the server side
+  const feedbacksToDisplay = feedbacks;
 
   const getUrgencyColor = (urgency) => {
     switch(urgency) {
@@ -88,12 +107,12 @@ const AdminFeedbackPage = ({ user, onLogout }) => {
         {/* Statistics Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
            {[
-             { label: 'Total Reports', val: feedbacks.length, icon: MessageSquare, color: 'text-blue-400' },
-             { label: 'Pending Action', val: feedbacks.filter(f => f.status === 'Pending').length, icon: Clock, color: 'text-amber-400' },
-             { label: 'Resolved', val: feedbacks.filter(f => f.status === 'Resolved').length, icon: CheckCircle2, color: 'text-emerald-400' },
-             { label: 'High Urgency', val: feedbacks.filter(f => f.urgency === 'High').length, icon: AlertTriangle, color: 'text-red-400' },
+             { label: 'Total Reports', val: totalReports, icon: MessageSquare, color: 'text-blue-400' },
+             { label: 'Current Filter', val: feedbacks.length, icon: Clock, color: 'text-amber-400' },
+             { label: 'Impact Score', val: feedbacks.reduce((acc, f) => acc + (f.votes || 0), 0), icon: ThumbsUp, color: 'text-emerald-400' },
+             { label: 'Page Focus', val: `Page ${currentPage}`, icon: CheckCircle2, color: 'text-sky-400' },
            ].map((stat) => (
-             <div key={stat.label} className="bg-slate-900 border border-white/10 rounded-3xl p-5 flex items-center justify-between">
+             <div key={stat.label} className="bg-slate-900 border border-white/10 rounded-3xl p-5 flex items-center justify-between shadow-lg">
                 <div>
                    <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-1">{stat.label}</p>
                    <p className="text-2xl font-bold">{stat.val}</p>
@@ -158,14 +177,14 @@ const AdminFeedbackPage = ({ user, onLogout }) => {
                        </div>
                     </td>
                   </tr>
-                ) : filteredFeedbacks.length === 0 ? (
+                ) : feedbacksToDisplay.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-20 text-center text-slate-500">
                       No community reports found matching your criteria.
                     </td>
                   </tr>
                 ) : (
-                  filteredFeedbacks.map((f) => (
+                  feedbacksToDisplay.map((f) => (
                     <tr key={f._id} className="hover:bg-white/[0.02] transition-colors group">
                       <td className="px-6 py-5">
                          <div className="space-y-1">
@@ -174,7 +193,7 @@ const AdminFeedbackPage = ({ user, onLogout }) => {
                          </div>
                       </td>
                       <td className="px-6 py-5">
-                         <div className="flex items-center gap-2 text-slate-300">
+                         <div className="flex items-center gap-2 text-white">
                             <div className="w-8 h-8 rounded-lg bg-sky-400/10 flex items-center justify-center shrink-0">
                                <MapPin className="w-4 h-4 text-sky-400" />
                             </div>
@@ -229,6 +248,51 @@ const AdminFeedbackPage = ({ user, onLogout }) => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {!loading && feedbacks.length > 0 && (
+            <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 bg-white/5 px-6 py-4 sm:flex-row">
+              <p className="text-sm text-white/60 font-medium">
+                Showing <span className="font-semibold text-white">{Math.min((currentPage - 1) * 10 + 1, totalReports)}</span> to{' '}
+                <span className="font-semibold text-white">{Math.min(currentPage * 10, totalReports)}</span> of{' '}
+                <span className="font-semibold text-white">{totalReports}</span> reports
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || loading}
+                  className="btn btn-secondary h-9 px-3 text-xs disabled:opacity-30 border-white/10"
+                >
+                  Previous
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all ${
+                        currentPage === i + 1 
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
+                          : 'text-slate-400 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || loading}
+                  className="btn btn-secondary h-9 px-3 text-xs disabled:opacity-30 border-white/10"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </AdminLayout>

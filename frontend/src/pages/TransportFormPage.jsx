@@ -19,7 +19,8 @@ const TransportFormPage = ({ user, onLogout, mode }) => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const areas = await fetchAreas();
+        const responseData = await fetchAreas(1, 1000);
+        const areas = responseData.data || (Array.isArray(responseData) ? responseData : []);
         setAllAreas(areas);
         if (mode === 'edit' && transportId) {
           const transport = await fetchTransportById(transportId);
@@ -44,7 +45,7 @@ const TransportFormPage = ({ user, onLogout, mode }) => {
   return (
     <AdminLayout user={user} onLogout={onLogout} eyebrow="Transport Management" title={mode === 'edit' ? 'Edit Route' : 'Create Route'}>
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-24 text-slate-300">
+        <div className="flex flex-col items-center justify-center py-24 text-white">
           <LoaderCircle className="h-8 w-8 animate-spin text-sky-400" />
           <p className="mt-4 font-medium">Loading form data...</p>
         </div>

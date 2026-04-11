@@ -1,43 +1,26 @@
-import axios from 'axios';
-import { loadAuthSession } from './auth';
+import api from '../services/api';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
-
-const getRequestConfig = () => {
-  const session = loadAuthSession();
-
-  return {
-    headers: session?.token
-      ? {
-          Authorization: `Bearer ${session.token}`,
-        }
-      : {},
-    withCredentials: true,
-  };
-};
-
-export const fetchFacilities = async () => {
-  const response = await axios.get(`${apiBaseUrl}/api/facilities`, getRequestConfig());
-  // The facility backend wraps the response in { success: true, data: ... } 
-  return response.data.data || response.data;
+export const fetchFacilities = async (page = 1, limit = 10) => {
+  const response = await api.get(`/api/facilities?page=${page}&limit=${limit}`);
+  return response.data;
 };
 
 export const fetchFacilityById = async (facilityId) => {
-  const response = await axios.get(`${apiBaseUrl}/api/facilities/${facilityId}`, getRequestConfig());
+  const response = await api.get(`/api/facilities/${facilityId}`);
   return response.data.data || response.data;
 };
 
 export const createFacility = async (payload) => {
-  const response = await axios.post(`${apiBaseUrl}/api/facilities`, payload, getRequestConfig());
+  const response = await api.post(`/api/facilities`, payload);
   return response.data.data || response.data;
 };
 
 export const updateFacility = async (facilityId, payload) => {
-  const response = await axios.put(`${apiBaseUrl}/api/facilities/${facilityId}`, payload, getRequestConfig());
+  const response = await api.put(`/api/facilities/${facilityId}`, payload);
   return response.data.data || response.data;
 };
 
 export const deleteFacility = async (facilityId) => {
-  const response = await axios.delete(`${apiBaseUrl}/api/facilities/${facilityId}`, getRequestConfig());
+  const response = await api.delete(`/api/facilities/${facilityId}`);
   return response.data;
 };

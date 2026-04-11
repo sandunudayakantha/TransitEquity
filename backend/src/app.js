@@ -28,6 +28,11 @@ app.use(cors({
 
 // Routes
 
+// Public Health Check
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'active', message: 'Server is awake' });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/transports', transportRoutes);

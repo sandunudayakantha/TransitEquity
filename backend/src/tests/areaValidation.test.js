@@ -1,8 +1,8 @@
 import request from 'supertest';
-import app from '../src/app.js';
+import app from '../app.js';
 import mongoose from 'mongoose';
-import User from '../src/models/User.model.js';
-import Area from '../src/models/Area.model.js';
+import User from '../models/User.model.js';
+import Area from '../models/Area.model.js';
 import dotenv from 'dotenv';
 
 dotenv.config();

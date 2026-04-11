@@ -14,10 +14,9 @@ const AreaSelector = memo(({ onSelect, placeholder = "Select an area", disabled 
         setLoading(true);
         setError(null);
         // Uses the existing service imported from lib/areas
-        const data = await fetchAreas();
+        const response = await fetchAreas(1, 1000);
         if (isMounted) {
-          // Fallback to empty array if response data is somehow invalid 
-          setAreas(Array.isArray(data) ? data : (data.areas || []));
+          setAreas(response.data || (Array.isArray(response) ? response : []));
         }
       } catch (err) {
         if (isMounted) {

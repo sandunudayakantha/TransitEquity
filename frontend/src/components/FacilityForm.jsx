@@ -41,10 +41,13 @@ const FacilityForm = ({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [areasData, transportsData] = await Promise.all([
-          fetchAreas(),
-          fetchTransports(),
+        const [areasResponse, transportsResponse] = await Promise.all([
+          fetchAreas(1, 1000),
+          fetchTransports(1, 1000),
         ]);
+
+        const areasData = areasResponse.data || (Array.isArray(areasResponse) ? areasResponse : []);
+        const transportsData = transportsResponse.data || (Array.isArray(transportsResponse) ? transportsResponse : []);
 
         setAreas(areasData);
         setTransports(transportsData);

@@ -17,8 +17,22 @@ export const create = async (req, res) => {
 // Get All
 export const getAll = async (req, res) => {
   try {
-    const facilities = await facilityService.getAllFacilities();
-    res.status(200).json({ success: true, count: facilities.length, data: facilities });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const [facilities, total] = await Promise.all([
+      facilityService.getAllFacilities(page, limit),
+      facilityService.countFacilities()
+    ]);
+
+    res.status(200).json({ 
+      success: true, 
+      count: facilities.length, 
+      total,
+      pages: Math.ceil(total / limit),
+      page,
+      data: facilities 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

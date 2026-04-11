@@ -9,26 +9,33 @@ const ManageFacilitiesPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [facilities, setFacilities] = useState([]);
   const [areasMap, setAreasMap] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalFacilities, setTotalFacilities] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeletingId, setIsDeletingId] = useState(null);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const loadData = async () => {
+  const loadData = async (page = 1) => {
     setIsLoading(true);
 
     try {
       const [facilitiesData, areasData] = await Promise.all([
-        fetchFacilities(),
+        fetchFacilities(page, 10),
         fetchAreas()
       ]);
       
       const aMap = {};
-      areasData.forEach(a => {
+      const areasList = Array.isArray(areasData.data) ? areasData.data : (Array.isArray(areasData) ? areasData : []);
+      areasList.forEach(a => {
         aMap[a._id] = a;
       });
       setAreasMap(aMap);
-      setFacilities(facilitiesData);
+      setFacilities(facilitiesData.data || []);
+      setTotalFacilities(facilitiesData.total || 0);
+      setTotalPages(facilitiesData.pages || 1);
+      setCurrentPage(facilitiesData.page || 1);
     } catch (requestError) {
       setError(requestError.response?.data?.message || requestError.response?.data?.error || 'Failed to load facilities.');
     } finally {
@@ -37,8 +44,8 @@ const ManageFacilitiesPage = ({ user, onLogout }) => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(currentPage);
+  }, [currentPage]);
 
   const handleDelete = async (facilityId) => {
     const facility = facilities.find((item) => item._id === facilityId);
@@ -75,7 +82,7 @@ const ManageFacilitiesPage = ({ user, onLogout }) => {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white">
-              Total facilities: <span className="font-semibold text-white">{facilities.length}</span>
+              Total facilities: <span className="font-semibold text-white">{totalFacilities}</span>
             </div>
             <Link className="btn btn-primary gap-2 justify-center" to="/admin/facilities/new">
               <Plus className="h-4 w-4" />
@@ -85,20 +92,20 @@ const ManageFacilitiesPage = ({ user, onLogout }) => {
         </div>
 
         {error ? (
-          <div className="mt-6 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <div className="mt-6 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-white">
             {error}
           </div>
         ) : null}
 
         {successMessage ? (
-          <div className="mt-6 rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+          <div className="mt-6 rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-white">
             {successMessage}
           </div>
         ) : null}
 
         <div className="mt-6 space-y-4">
           {isLoading ? (
-            <div className="flex items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60 px-6 py-16 text-slate-300">
+            <div className="flex items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60 px-6 py-16 text-white">
               <LoaderCircle className="mr-3 h-5 w-5 animate-spin" />
               Loading facilities...
             </div>
@@ -122,15 +129,15 @@ const ManageFacilitiesPage = ({ user, onLogout }) => {
                     <div>
                       <div className="flex flex-wrap items-center gap-3">
                         <h4 className="text-xl font-semibold text-white">{facility.name}</h4>
-                        <span className="rounded-full bg-sky-400/10 px-3 py-1 text-xs font-medium text-sky-200">
+                        <span className="rounded-full bg-sky-400/10 px-3 py-1 text-xs font-medium text-white">
                           {facility.type}
                         </span>
                         {facility.hasDisabledAccess ? (
-                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300 border border-emerald-500/20">
+                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-white border border-emerald-500/20">
                              <Accessibility size={12} /> Universal Access
                            </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/10 px-3 py-1 text-xs font-medium text-slate-300 border border-slate-500/20">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/10 px-3 py-1 text-xs font-medium text-white border border-slate-500/20">
                              <ZapOff size={12} /> Standard Access
                            </span>
                         )}
@@ -147,7 +154,7 @@ const ManageFacilitiesPage = ({ user, onLogout }) => {
                         <Edit3 className="h-4 w-4" />
                         Edit
                       </button>
-                      <button className="btn bg-red-500/15 text-red-100 hover:bg-red-500/25 gap-2" type="button" onClick={() => handleDelete(facility._id)} disabled={isDeletingId === facility._id}>
+                      <button className="btn bg-red-500/15 text-white hover:bg-red-500/25 gap-2" type="button" onClick={() => handleDelete(facility._id)} disabled={isDeletingId === facility._id}>
                         {isDeletingId === facility._id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         Delete
                       </button>
@@ -156,6 +163,51 @@ const ManageFacilitiesPage = ({ user, onLogout }) => {
                 </article>
               );
             })}
+
+          {/* Pagination Controls */}
+          {!isLoading && facilities.length > 0 && (
+            <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 bg-white/5 px-6 py-4 sm:flex-row rounded-3xl mt-4">
+              <p className="text-sm text-white/60">
+                Showing <span className="font-semibold text-white">{Math.min((currentPage - 1) * 10 + 1, totalFacilities)}</span> to{' '}
+                <span className="font-semibold text-white">{Math.min(currentPage * 10, totalFacilities)}</span> of{' '}
+                <span className="font-semibold text-white">{totalFacilities}</span> facilities
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || isLoading}
+                  className="btn btn-secondary h-9 px-3 text-xs disabled:opacity-30 border-white/10"
+                >
+                  Previous
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all ${
+                        currentPage === i + 1 
+                          ? 'bg-sky-500 text-white' 
+                          : 'text-white/60 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || isLoading}
+                  className="btn btn-secondary h-9 px-3 text-xs disabled:opacity-30 border-white/10"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </AdminLayout>

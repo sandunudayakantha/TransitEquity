@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import axios from 'axios';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bus, LogIn } from 'lucide-react';
-
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+import api from '../services/api';
 
 const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate();
@@ -29,11 +27,7 @@ const LoginPage = ({ onLogin }) => {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post(
-        `${apiBaseUrl}/api/auth/login`,
-        formData,
-        { withCredentials: true }
-      );
+      const response = await api.post('/api/auth/login', formData);
 
       const session = {
         token: response.data.token,

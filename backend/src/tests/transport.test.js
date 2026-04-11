@@ -1,9 +1,9 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
-import app from '../src/app.js';
-import Transport from '../src/models/Transport.model.js';
-import ServiceStatus from '../src/models/ServiceStatus.model.js';
-import User from '../src/models/User.model.js';
+import app from '../app.js';
+import Transport from '../models/Transport.model.js';
+import ServiceStatus from '../models/ServiceStatus.model.js';
+import User from '../models/User.model.js';
 import dotenv from 'dotenv';
 
 dotenv.config();

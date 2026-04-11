@@ -45,11 +45,15 @@ export const createFeedback = async (data) => {
 };
 
 export const getAllFeedback = async (filters = {}) => {
+  const page = parseInt(filters.page) || 1;
+  const limit = parseInt(filters.limit) || 10;
+  const skip = (page - 1) * limit;
+
   const pipeline = [];
 
   // 1. Initial Filtering
   const match = {};
-  if (filters.status) match.status = filters.status;
+  if (filters.status && filters.status !== 'All') match.status = filters.status;
   if (filters.urgency) match.urgency = filters.urgency;
   if (filters.issueType) match.issueType = filters.issueType;
   
@@ -60,12 +64,20 @@ export const getAllFeedback = async (filters = {}) => {
   if (filters.submittedBy && mongoose.Types.ObjectId.isValid(filters.submittedBy)) {
     match.submittedBy = new mongoose.Types.ObjectId(filters.submittedBy);
   }
+
+  // Handle Search if provided
+  if (filters.search) {
+    match.$or = [
+      { description: { $regex: filters.search, $options: 'i' } },
+      { issueType: { $regex: filters.search, $options: 'i' } }
+    ];
+  }
   
   if (Object.keys(match).length > 0) {
     pipeline.push({ $match: match });
   }
 
-  // 2. Join with Area for name/city
+  // 2. Join with Area for name/city (Moved earlier to allow searching by area name)
   pipeline.push({
     $lookup: {
       from: 'areas',
@@ -73,7 +85,25 @@ export const getAllFeedback = async (filters = {}) => {
       foreignField: '_id',
       as: 'areaDetails'
     }
-  }, { $unwind: '$areaDetails' });
+  }, { 
+    $unwind: {
+      path: '$areaDetails',
+      preserveNullAndEmptyArrays: true
+    }
+  });
+
+  // Re-apply search on area name if needed
+  if (filters.search) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { description: { $regex: filters.search, $options: 'i' } },
+          { issueType: { $regex: filters.search, $options: 'i' } },
+          { 'areaDetails.name': { $regex: filters.search, $options: 'i' } }
+        ]
+      }
+    });
+  }
 
   // 3. Join with GapReport for current severity context
   pipeline.push({
@@ -96,7 +126,24 @@ export const getAllFeedback = async (filters = {}) => {
   // 4. Final Sorting
   pipeline.push({ $sort: { priorityScore: -1, createdAt: -1 } });
 
-  return await Feedback.aggregate(pipeline);
+  // 5. Pagination using Facet
+  pipeline.push({
+    $facet: {
+      metadata: [{ $count: 'total' }],
+      data: [{ $skip: skip }, { $limit: limit }]
+    }
+  });
+
+  const result = await Feedback.aggregate(pipeline);
+  const total = result[0]?.metadata[0]?.total || 0;
+  
+  return {
+    total,
+    pages: Math.ceil(total / limit),
+    page,
+    count: result[0]?.data.length,
+    data: result[0]?.data
+  };
 };
 
 export const getFeedbackById = async (id) => {

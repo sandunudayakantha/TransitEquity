@@ -7,7 +7,7 @@ import {
   voteFeedback,
   deleteFeedback
 } from '../controllers/feedback.controller.js';
-import { protect, authorize } from '../middlewares/authMiddleware.js';
+import { protect, authorize, optionalProtect } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -68,7 +68,7 @@ const router = express.Router();
  *       400:
  *         description: Validation error
  */
-router.post('/', protect, createFeedback);
+router.post('/', optionalProtect, createFeedback);
 
 /**
  * @swagger

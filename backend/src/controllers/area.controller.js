@@ -16,8 +16,24 @@ export const createArea = async (req, res) => {
 
 export const getAllAreas = async (req, res) => {
     try {
-        const areas = await Area.find();
-        res.status(200).json(areas);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const total = await Area.countDocuments();
+        const areas = await Area.find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.status(200).json({
+            success: true,
+            count: areas.length,
+            total,
+            pages: Math.ceil(total / limit),
+            page,
+            data: areas
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

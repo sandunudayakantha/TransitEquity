@@ -14,8 +14,10 @@ export const createFeedback = async (req, res, next) => {
       });
     }
 
-    // ✅ Track the submitting user
-    req.body.submittedBy = req.user._id;
+    // ✅ Track the submitting user if they are logged in
+    if (req.user) {
+      req.body.submittedBy = req.user._id;
+    }
 
     const feedback = await feedbackService.createFeedback(req.body);
     
@@ -48,11 +50,10 @@ export const createFeedback = async (req, res, next) => {
 // Rest of your controller functions remain exactly the same...
 export const getAllFeedback = async (req, res, next) => {
   try {
-    const feedbacks = await feedbackService.getAllFeedback(req.query);
+    const response = await feedbackService.getAllFeedback(req.query);
     res.json({
       success: true,
-      count: feedbacks.length,
-      data: feedbacks
+      ...response
     });
   } catch (error) {
     next(error);

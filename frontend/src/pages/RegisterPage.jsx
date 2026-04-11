@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import axios from 'axios';
 import { Bus, UserPlus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+import api from '../services/api';
 
 const roleOptions = [
   {
@@ -52,10 +50,9 @@ const RegisterPage = ({ onLogin }) => {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post(
-        `${apiBaseUrl}/api/auth/register`,
-        formData,
-        { withCredentials: true }
+      const response = await api.post(
+        '/api/auth/register',
+        formData
       );
 
       if (response.data.token && response.data.user) {

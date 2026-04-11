@@ -1,5 +1,6 @@
-import { Bus, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import logo from '../assets/logo.png';
 
 const Navbar = ({ user, onLogout }) => {
   const navigate = useNavigate();
@@ -24,9 +25,7 @@ const Navbar = ({ user, onLogout }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className="flex items-center gap-2">
-            <div className="bg-accent p-2 rounded-lg">
-              <Bus className="w-6 h-6 text-white" />
-            </div>
+            <img src={logo} alt="TransitEquity logo" className="h-10 w-10 rounded-lg object-cover" />
             <span className="text-xl font-bold text-primary">TransitEquity</span>
           </Link>
           

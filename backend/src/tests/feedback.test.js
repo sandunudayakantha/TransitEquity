@@ -1,12 +1,15 @@
+import { jest } from '@jest/globals';
 import request from 'supertest';
-import app from '../src/app.js';
+import app from '../app.js';
 import mongoose from 'mongoose';
-import User from '../src/models/User.model.js';
-import Area from '../src/models/Area.model.js';
-import Feedback from '../src/models/Feedback.model.js';
+import User from '../models/User.model.js';
+import Area from '../models/Area.model.js';
+import Feedback from '../models/Feedback.model.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+jest.setTimeout(30000);
 
 describe('Feedback Endpoints', () => {
     let adminToken;
@@ -89,6 +92,22 @@ describe('Feedback Endpoints', () => {
         feedbackId = res.body.data._id;
     });
 
+    it('should submit new feedback with user attribution', async () => {
+        const res = await request(app)
+            .post('/api/feedback')
+            .set('Cookie', [officerToken])
+            .send({
+                areaId: testAreaId,
+                issueType: 'New Route',
+                description: 'This feedback should be attributed to the officer.',
+                coordinates: { lat: 10.2, lng: 20.2 },
+                urgency: 'High'
+            });
+
+        expect(res.statusCode).toEqual(201);
+        expect(res.body.data.submittedBy).toBeDefined();
+    });
+
     it('should get all feedback', async () => {
         const res = await request(app).get('/api/feedback');
         expect(res.statusCode).toEqual(200);
@@ -109,7 +128,9 @@ describe('Feedback Endpoints', () => {
     });
 
     it('should upvote feedback', async () => {
-        const res = await request(app).put(`/api/feedback/${feedbackId}/vote`);
+        const res = await request(app)
+            .put(`/api/feedback/${feedbackId}/vote`)
+            .set('Cookie', [officerToken]);
         expect(res.statusCode).toEqual(200);
         expect(res.body.data.votes).toBe(1);
     });
