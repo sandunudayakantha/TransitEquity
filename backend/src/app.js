@@ -27,6 +27,9 @@ app.use(cors({
 }));
 
 // Routes
+app.get('/', (req, res) => {
+  res.send('TransitEquity API is running...');
+});
 
 // Public Health Check
 app.get('/health', (req, res) => {
